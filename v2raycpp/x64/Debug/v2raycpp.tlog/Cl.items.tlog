@@ -1,0 +1,16 @@
+E:\v2raycpp\v2raycpp\src\CoreManager.cpp;E:\v2raycpp\v2raycpp\v2raycpp\x64\Debug\CoreManager.obj
+E:\v2raycpp\v2raycpp\src\Logger.cpp;E:\v2raycpp\v2raycpp\v2raycpp\x64\Debug\Logger.obj
+E:\v2raycpp\v2raycpp\src\TrayIcon.cpp;E:\v2raycpp\v2raycpp\v2raycpp\x64\Debug\TrayIcon.obj
+E:\v2raycpp\v2raycpp\v2raycpp.cpp;E:\v2raycpp\v2raycpp\v2raycpp\x64\Debug\v2raycpp.obj
+E:\v2raycpp\v2raycpp\main.cpp;E:\v2raycpp\v2raycpp\v2raycpp\x64\Debug\main.obj
+E:\v2raycpp\v2raycpp\include\ProfileItem.cpp;E:\v2raycpp\v2raycpp\v2raycpp\x64\Debug\ProfileItem.obj
+E:\v2raycpp\v2raycpp\src\SysProxyHandler.cpp;E:\v2raycpp\v2raycpp\v2raycpp\x64\Debug\SysProxyHandler.obj
+E:\v2raycpp\v2raycpp\src\TrojanFmt.cpp;E:\v2raycpp\v2raycpp\v2raycpp\x64\Debug\TrojanFmt.obj
+E:\v2raycpp\v2raycpp\src\AppConfig.cpp;E:\v2raycpp\v2raycpp\v2raycpp\x64\Debug\AppConfig.obj
+E:\v2raycpp\v2raycpp\src\ConfigGenerator.cpp;E:\v2raycpp\v2raycpp\v2raycpp\x64\Debug\ConfigGenerator.obj
+E:\v2raycpp\v2raycpp\src\Routing.cpp;E:\v2raycpp\v2raycpp\v2raycpp\x64\Debug\Routing.obj
+E:\v2raycpp\v2raycpp\v2raycpp\x64\Debug\qt\rcc\qrc_v2raycpp.cpp;E:\v2raycpp\v2raycpp\v2raycpp\x64\Debug\qrc_v2raycpp.obj
+E:\v2raycpp\v2raycpp\v2raycpp\x64\Debug\qt\moc\moc_v2raycpp.cpp;E:\v2raycpp\v2raycpp\v2raycpp\x64\Debug\moc_v2raycpp.obj
+E:\v2raycpp\v2raycpp\v2raycpp\x64\Debug\qt\moc\moc_CoreManager.cpp;E:\v2raycpp\v2raycpp\v2raycpp\x64\Debug\moc_CoreManager.obj
+E:\v2raycpp\v2raycpp\v2raycpp\x64\Debug\qt\moc\moc_Logger.cpp;E:\v2raycpp\v2raycpp\v2raycpp\x64\Debug\moc_Logger.obj
+E:\v2raycpp\v2raycpp\v2raycpp\x64\Debug\qt\moc\moc_TrayIcon.cpp;E:\v2raycpp\v2raycpp\v2raycpp\x64\Debug\moc_TrayIcon.obj
