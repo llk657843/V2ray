@@ -1,0 +1,356 @@
+﻿/*
+ * v2raycpp Style Sheet
+ * Based on design from E:\design\code.html
+ * Primary Color: #1152d4
+ */
+
+/* ==================== Main Window ==================== */
+v2raycppClass {
+    background-color: #f6f6f8;
+}
+
+/* ==================== Menu Bar ==================== */
+QMenuBar {
+    background-color: white;
+    border-bottom: 1px solid #e2e8f0;
+    padding: 4px;
+}
+
+QMenuBar::item {
+    padding: 6px 12px;
+    border-radius: 4px;
+}
+
+QMenuBar::item:selected {
+    background-color: rgba(17, 82, 212, 0.1);
+    color: #1152d4;
+}
+
+QMenu {
+    background-color: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 4px;
+}
+
+QMenu::item {
+    padding: 8px 16px;
+    border-radius: 4px;
+}
+
+QMenu::item:selected {
+    background-color: rgba(17, 82, 212, 0.1);
+}
+
+/* ==================== Toolbar ==================== */
+QToolBar {
+    background-color: rgba(255, 255, 255, 0.3);
+    border-bottom: 1px solid rgba(17, 82, 212, 0.1);
+    padding: 8px 16px;
+    spacing: 8px;
+}
+
+QToolBar QToolButton {
+    background-color: #f1f5f9;
+    border: none;
+    border-radius: 8px;
+    padding: 8px 12px;
+    color: #64748b;
+}
+
+QToolBar QToolButton:hover {
+    background-color: rgba(17, 82, 212, 0.1);
+    color: #1152d4;
+}
+
+/* ==================== Sidebar ==================== */
+#sidebarWidget {
+    width: 256px;
+    background-color: rgba(255, 255, 255, 0.5);
+    border-right: 1px solid rgba(17, 82, 212, 0.1);
+}
+
+#logoLabel {
+    font-size: 18px;
+    font-weight: bold;
+    color: #1e293b;
+}
+
+#versionLabel {
+    font-size: 12px;
+    color: rgba(17, 82, 212, 0.6);
+}
+
+QPushButton[navButton=" true\] {
+ background-color: transparent;
+ border: none;
+ border-radius: 12px;
+ padding: 12px 16px;
+ text-align: left;
+ color: #64748b;
+ font-size: 14px;
+ font-weight: 500;
+}
+
+QPushButton[navButton=\true\]:hover {
+ background-color: rgba(17, 82, 212, 0.1);
+ color: #1152d4;
+}
+
+QPushButton[navButton=\true\][selected=\true\] {
+ background-color: #1152d4;
+ color: white;
+ box-shadow: 0 4px 12px rgba(17, 82, 212, 0.3);
+}
+
+#proPlanWidget {
+ background-color: rgba(17, 82, 212, 0.05);
+ border: 1px solid rgba(17, 82, 212, 0.1);
+ border-radius: 16px;
+ padding: 12px;
+ margin: 8px;
+}
+
+#disconnectBtn {
+ background-color: transparent;
+ border: none;
+ border-radius: 12px;
+ padding: 12px 16px;
+ text-align: left;
+ color: #ef4444;
+ font-size: 14px;
+ font-weight: 500;
+}
+
+#disconnectBtn:hover {
+ background-color: rgba(239, 68, 68, 0.1);
+}
+
+/* ==================== Start Proxy Button ==================== */
+#startProxyBtn {
+ background-color: #1152d4;
+ color: white;
+ border: none;
+ border-radius: 12px;
+ padding: 10px 24px;
+ font-size: 14px;
+ font-weight: bold;
+ box-shadow: 0 4px 12px rgba(17, 82, 212, 0.3);
+}
+
+#startProxyBtn:hover {
+ background-color: #3b6fd4;
+}
+
+#startProxyBtn:disabled {
+ background-color: #94a3b8;
+ box-shadow: none;
+}
+
+/* ==================== Search Box ==================== */
+QLineEdit[searchBox=\true\] {
+ background-color: #f1f5f9;
+ border: none;
+ border-radius: 12px;
+ padding: 8px 16px 8px 40px;
+ font-size: 14px;
+ color: #1e293b;
+}
+
+QLineEdit[searchBox=\true\]:focus {
+ border: 2px solid #1152d4;
+ background-color: white;
+}
+
+/* ==================== Filter Buttons ==================== */
+QPushButton[filterBtn=\true\] {
+ background-color: #f1f5f9;
+ border: none;
+ border-radius: 8px;
+ padding: 8px 16px;
+ font-size: 12px;
+ font-weight: bold;
+ text-transform: uppercase;
+ letter-spacing: 0.5px;
+ color: #64748b;
+}
+
+QPushButton[filterBtn=\true\]:hover {
+ color: #1152d4;
+ background-color: rgba(17, 82, 212, 0.1);
+}
+
+QPushButton[filterBtn=\true\][selected=\true\] {
+ background-color: #1152d4;
+ color: white;
+}
+
+/* ==================== Server Card ==================== */
+QFrame[serverCard=\true\] {
+ background-color: white;
+ border: 1px solid #e2e8f0;
+ border-radius: 16px;
+ padding: 16px;
+}
+
+QFrame[serverCard=\true\]:hover {
+ border-color: rgba(17, 82, 212, 0.5);
+ box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+QFrame[serverCard=\true\][active=\true\] {
+ border: 2px solid #1152d4;
+ box-shadow: 0 8px 24px rgba(17, 82, 212, 0.15);
+}
+
+#serverNameLabel {
+ font-size: 16px;
+ font-weight: bold;
+ color: #1e293b;
+}
+
+#statusIndicator {
+ width: 8px;
+ height: 8px;
+ border-radius: 50%;
+ background-color: #94a3b8;
+}
+
+#statusIndicator[connected=\true\] {
+ background-color: #10b981;
+}
+
+#latencyLabel {
+ font-size: 14px;
+ font-weight: 900;
+ color: #10b981;
+}
+
+#latencyLabel[high=\true\] {
+ color: #f59e0b;
+}
+
+#protocolLabel {
+ background-color: #f1f5f9;
+ border-radius: 9999px;
+ padding: 4px 12px;
+ font-size: 12px;
+ font-weight: bold;
+ color: #64748b;
+}
+
+/* ==================== Toggle Switch ==================== */
+QPushButton[toggleSwitch=\true\] {
+ width: 48px;
+ height: 24px;
+ border-radius: 12px;
+ border: none;
+ background-color: #e2e8f0;
+}
+
+QPushButton[toggleSwitch=\true\]:checked {
+ background-color: #1152d4;
+}
+
+/* ==================== Add Node Button ==================== */
+QPushButton[addNodeBtn=\true\] {
+ background-color: transparent;
+ border: 2px dashed #e2e8f0;
+ border-radius: 16px;
+ padding: 24px;
+ color: #94a3b8;
+ font-size: 14px;
+ font-weight: bold;
+}
+
+QPushButton[addNodeBtn=\true\]:hover {
+ border-color: #1152d4;
+ background-color: rgba(17, 82, 212, 0.05);
+ color: #1152d4;
+}
+
+/* ==================== Status Bar ==================== */
+QStatusBar {
+ background-color: white;
+ border-top: 1px solid rgba(17, 82, 212, 0.1);
+ padding: 8px 16px;
+}
+
+QStatusBar QLabel {
+ color: #64748b;
+ font-size: 11px;
+ font-weight: bold;
+ text-transform: uppercase;
+ letter-spacing: 0.5px;
+}
+
+#connectionStatusLabel {
+ color: #10b981;
+}
+
+/* ==================== Server List ==================== */
+QListWidget {
+ background-color: transparent;
+ border: none;
+ padding: 16px;
+}
+
+QListWidget::item {
+ background-color: white;
+ border: 1px solid #e2e8f0;
+ border-radius: 16px;
+ padding: 16px;
+ margin-bottom: 16px;
+}
+
+QListWidget::item:selected {
+ border: 2px solid #1152d4;
+ background-color: rgba(17, 82, 212, 0.05);
+}
+
+QListWidget::item:hover {
+ border-color: rgba(17, 82, 212, 0.5);
+}
+
+/* ==================== Scrollbar ==================== */
+QScrollBar:vertical {
+ background: transparent;
+ width: 6px;
+ margin: 0;
+}
+
+QScrollBar::handle:vertical {
+ background: rgba(17, 82, 212, 0.2);
+ border-radius: 3px;
+}
+
+QScrollBar::handle:vertical:hover {
+ background: rgba(17, 82, 212, 0.4);
+}
+
+/* ==================== Page Title ==================== */
+#pageTitleLabel {
+ font-size: 30px;
+ font-weight: 900;
+ color: #1e293b;
+}
+
+#pageSubtitleLabel {
+ font-size: 14px;
+ font-weight: 500;
+ color: #64748b;
+}
+
+/* ==================== Progress Bar ==================== */
+QProgressBar {
+ background-color: #e2e8f0;
+ border: none;
+ border-radius: 4px;
+ height: 6px;
+ text-align: center;
+}
+
+QProgressBar::chunk {
+ background-color: #1152d4;
+ border-radius: 4px;
+}

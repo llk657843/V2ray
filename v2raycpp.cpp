@@ -9,6 +9,8 @@
 #include <QJsonArray>
 #include <QJsonObject>
 #include <QApplication>
+#include <QFile>
+#include <QTextStream>
 #include <QClipboard>
 #include <QInputDialog>
 #include <QVBoxLayout>
@@ -33,6 +35,7 @@ v2raycpp::v2raycpp(QWidget *parent)
     m_trayIcon->show();
     
     // Initialize UI
+    loadStyleSheet();
     initUI();
     
     // Initialize connections
@@ -76,6 +79,18 @@ v2raycpp::~v2raycpp()
     if (m_trayIcon)
     {
         m_trayIcon->hide();
+    }
+}
+
+void v2raycpp::loadStyleSheet()
+{
+    QFile styleFile("style.qss");
+    if (styleFile.open(QFile::ReadOnly | QFile::Text))
+    {
+        QTextStream stream(&styleFile);
+        QString styleSheet = stream.readAll();
+        this->setStyleSheet(styleSheet);
+        styleFile.close();
     }
 }
 

@@ -52,6 +52,7 @@ private:
     ProfileItem getSelectedProfile() const;
     bool parseProfileFromUrl(const QString& url, ProfileItem& profile);
     void updateStatusBar();
+    void loadStyleSheet();
 
 private:
     Ui::v2raycppClass ui;
