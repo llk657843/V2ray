@@ -348,10 +348,9 @@ bool v2raycpp::generateCoreConfig(const ProfileItem& profile)
     
     inbound["settings"] = socksSettings;
     
-    QJsonObject listenObj;
-    listenObj["address"] = "127.0.0.1";
-    listenObj["port"] = AppConfig::instance().getLocalPort();
-    inbound["listen"] = listenObj;
+    inbound["listen"] = "127.0.0.1";
+    auto port = AppConfig::instance().getLocalPort();
+    inbound["port"] = port;
     
     inbounds.append(inbound);
     config["inbounds"] = inbounds;
@@ -388,28 +387,52 @@ bool v2raycpp::generateCoreConfig(const ProfileItem& profile)
     
     if (protocol == "trojan")
     {
+        // Use servers array format like V2RayN
+        QJsonArray servers;
+        QJsonObject server;
+        server["address"] = profile.getAddress().c_str();
+        server["password"] = profile.getPassword().c_str();
+        server["port"] = profile.getPort();
+        server["level"] = 1;
+        servers.append(server);
+
         QJsonObject trojanSettings;
-        trojanSettings["address"] = profile.getAddress().c_str();
-        trojanSettings["password"] = profile.getPassword().c_str();
-        
+        trojanSettings["servers"] = servers;
+
         // TLS settings
         if (profile.getSecurity() == "tls")
         {
             QJsonObject tlsSettings;
             tlsSettings["serverName"] = profile.getSni().c_str();
+            tlsSettings["allowInsecure"] = true;
+
             if (!profile.getFingerprint().empty())
             {
                 tlsSettings["fingerprint"] = profile.getFingerprint().c_str();
             }
-            tlsSettings["allowInsecure"] = profile.getAllowInsecure();
-            
+            else
+            {
+                tlsSettings["fingerprint"] = "random";
+            }
+
+            QJsonArray alpn;
+            alpn.append("h2");
+            alpn.append("http/1.1");
+            tlsSettings["alpn"] = alpn;
+
             QJsonObject streamSettings;
             streamSettings["network"] = profile.getNetwork().c_str();
             streamSettings["security"] = "tls";
             streamSettings["tlsSettings"] = tlsSettings;
+
+            QJsonObject mux;
+            mux["enabled"] = false;
+            mux["concurrency"] = -1;
+            outbound["mux"] = mux;
+
             outbound["streamSettings"] = streamSettings;
         }
-        
+
         outbound["settings"] = trojanSettings;
     }
     
@@ -466,7 +489,12 @@ void v2raycpp::loadConfig()
 {
     // Load application configuration
     AppConfig::instance().load();
-    
+
+    // Initialize core config path if not set
+    if (AppConfig::instance().getCoreConfigPath().isEmpty()) {
+        AppConfig::instance().setCoreConfigPath(AppConfig::instance().getDefaultConfigPath());
+    }
+
     // Load server list from JSON file
     QString configPath = AppConfig::instance().getConfigPath();
     QString serversFile = configPath + "/servers.json";

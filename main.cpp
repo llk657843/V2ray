@@ -5,6 +5,7 @@
 #include <QDateTime>
 #include <QStandardPaths>
 #include <QDir>
+#include <QFont>
 
 int main(int argc, char *argv[])
 {
@@ -22,6 +23,11 @@ int main(int argc, char *argv[])
     }
 
     QApplication app(argc, argv);
+
+    // Set font for Chinese support
+    QFont font("Microsoft YaHei", 9);
+    app.setFont(font);
+
     v2raycpp window;
     window.show();
     return app.exec();
