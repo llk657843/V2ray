@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include <QtWidgets/QMainWindow>
 #include <QMessageBox>
@@ -30,6 +30,9 @@ private slots:
     void onAddServerClicked();
     void onSettingsClicked();
     void onServerDoubleClicked(const QModelIndex& index);
+    void onServerSelected(int currentRow);
+    void onEditServerClicked();
+    void onDeleteServerClicked();
     void onLogOutput(const QString& log);
     void onErrorOutput(const QString& error);
     void onStatusChanged(CoreStatus status);
@@ -40,6 +43,9 @@ private slots:
     void onTrayDoubleClicked();
     void onEnableSystemProxy();
     void onDisableSystemProxy();
+    void onRefreshLatencyClicked();
+    void onCustomContextMenu(const QPoint& pos);
+    void onSearchTextChanged(const QString& text);
 
 private:
     void initUI();
@@ -53,6 +59,24 @@ private:
     bool parseProfileFromUrl(const QString& url, ProfileItem& profile);
     void updateStatusBar();
     void loadStyleSheet();
+    void testLatency(const QString& address, int port);
+
+    // Traffic statistics
+    qint64 m_bytesReceived = 0;
+    qint64 m_bytesSent = 0;
+    qint64 m_lastBytesReceived = 0;
+    qint64 m_lastBytesSent = 0;
+    QTimer* m_statsTimer = nullptr;
+    void startStatsTimer();
+    void stopStatsTimer();
+    void updateStats();
+
+    // Auto reconnect
+    QTimer* m_reconnectTimer = nullptr;
+    bool m_autoReconnect = true;
+    void startReconnectTimer();
+    void stopReconnectTimer();
+    void onReconnectTimeout();
 
 private:
     Ui::v2raycppClass ui;

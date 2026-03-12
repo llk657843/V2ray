@@ -1,4 +1,4 @@
-#include "ConfigGenerator.h"
+﻿#include "ConfigGenerator.h"
 #include <QJsonDocument>
 #include <QJsonArray>
 #include <QJsonObject>
@@ -20,8 +20,8 @@ QString ConfigGenerator::generateClientConfig(const ProfileItem& node, ERoutingM
     logObj["loglevel"] = "warning";
     config["log"] = logObj;
 
-    // 2. Inbounds 配置（SOCKS 10808 + HTTP 10809）
-    config["inbounds"] = genInbounds();
+    // 2. Inbounds 配置（SOCKS 10808 + HTTP 10809 + 端口转发）
+    config["inbounds"] = genInbounds(node);
 
     // 3. Outbounds 配置（Trojan 出站）
     config["outbounds"] = genOutbounds(node);
@@ -37,7 +37,7 @@ QString ConfigGenerator::generateClientConfig(const ProfileItem& node, ERoutingM
     return doc.toJson(QJsonDocument::Indented);
 }
 
-QJsonArray ConfigGenerator::genInbounds()
+QJsonArray ConfigGenerator::genInbounds(const ProfileItem& node)
 {
     QJsonArray inbounds;
 
@@ -76,6 +76,25 @@ QJsonArray ConfigGenerator::genInbounds()
     httpInbound["settings"] = httpSettings;
 
     inbounds.append(httpInbound);
+
+    // 端口转发配置 - 如果配置了本地端口和转发目标
+    if (node.getLocalPort() > 0 && !node.getForwardAddress().empty() && node.getForwardPort() > 0)
+    {
+        // 使用 dokodemo-door 协议进行端口转发
+        QJsonObject portForwardInbound;
+        portForwardInbound["tag"] = "port-forward-inbound";
+        portForwardInbound["protocol"] = "dokodemo-door";
+        portForwardInbound["listen"] = "127.0.0.1";
+        portForwardInbound["port"] = node.getLocalPort();
+
+        QJsonObject portForwardSettings;
+        portForwardSettings["address"] = QString::fromStdString(node.getForwardAddress());
+        portForwardSettings["port"] = node.getForwardPort();
+        portForwardSettings["network"] = "tcp,udp";
+        portForwardInbound["settings"] = portForwardSettings;
+
+        inbounds.append(portForwardInbound);
+    }
 
     return inbounds;
 }

@@ -1,9 +1,9 @@
-#pragma once
+﻿#pragma once
 
 #include <string>
 
 /// <summary>
-/// 鑺傜偣閰嶇疆绫诲瀷鏋氫妇
+/// 节点配置类型枚举
 /// </summary>
 enum class EConfigType
 {
@@ -20,7 +20,7 @@ enum class EConfigType
 };
 
 /// <summary>
-/// 鍗忚棰濆鍙傛暟锛堢敤浜庡瓨鍌?flow 鍙婂叾浠栨墿灞曞弬鏁帮級
+/// 协议额外参数（用于存储 flow 及其他扩展参数）
 /// </summary>
 struct ProtocolExtra
 {
@@ -36,7 +36,9 @@ struct ProtocolExtra
 };
 
 /// <summary>
-/// 鑺傜偣閰嶇疆鏂囦欢椤癸紙ProfileItem锛?/// 瀛樺偍鎵€鏈夊崟涓妭鐐硅繛鎺ラ厤缃俊鎭?/// </summary>
+/// 节点配置文件类（ProfileItem）
+/// 存储所有单个节点连接配置信息
+/// </summary>
 class ProfileItem
 {
 public:
@@ -81,6 +83,17 @@ public:
     void setSpiderX(const std::string& value) { spiderX = value; }
     void setProtocolExtra(const ProtocolExtra& value) { protocolExtra = value; }
 
+    int getLatency() const { return latency; }
+    void setLatency(int value) { latency = value; }
+
+    // 端口转发配置
+    int getLocalPort() const { return localPort; }
+    void setLocalPort(int value) { localPort = value; }
+    std::string getForwardAddress() const { return forwardAddress; }
+    void setForwardAddress(const std::string& value) { forwardAddress = value; }
+    int getForwardPort() const { return forwardPort; }
+    void setForwardPort(int value) { forwardPort = value; }
+
     bool isValid() const;
     std::string getConfigTypeString() const;
 
@@ -107,4 +120,10 @@ private:
     std::string spiderX;
 
     ProtocolExtra protocolExtra;
+    int latency = -1;
+
+    // 端口转发配置
+    int localPort = 0;
+    std::string forwardAddress;
+    int forwardPort = 0;
 };

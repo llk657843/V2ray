@@ -1,4 +1,4 @@
-﻿#include "v2raycpp.h"
+#include "v2raycpp.h"
 #include "TrayIcon.h"
 #include "TrojanFmt.h"
 #include <QFileDialog>
@@ -13,6 +13,12 @@
 #include <QTextStream>
 #include <QClipboard>
 #include <QInputDialog>
+#include <QShortcut>
+#include <Qt>
+#include <QtNetwork/QTcpSocket>
+#include <QElapsedTimer>
+#include <QThread>
+
 #include <QVBoxLayout>
 #include <QLabel>
 #include <QLineEdit>
@@ -21,6 +27,16 @@
 v2raycpp::v2raycpp(QWidget *parent)
     : QMainWindow(parent)
 {
+    // Debug log
+    {
+        QFile logFile("E:/v2raycpp/V2ray/x64/Debug/debug.log");
+        if (logFile.open(QIODevice::WriteOnly | QIODevice::Append | QIODevice::Text)) {
+            QTextStream stream(&logFile);
+            stream << "=== v2raycpp constructor ===" << Qt::endl;
+            logFile.close();
+        }
+    }
+
     ui.setupUi(this);
     
     // Initialize core manager
@@ -85,13 +101,19 @@ v2raycpp::~v2raycpp()
 void v2raycpp::loadStyleSheet()
 {
     QFile styleFile("style.qss");
-    if (styleFile.open(QFile::ReadOnly | QFile::Text))
-    {
-        QTextStream stream(&styleFile);
-        QString styleSheet = stream.readAll();
-        this->setStyleSheet(styleSheet);
-        styleFile.close();
+    if (!styleFile.open(QFile::ReadOnly | QFile::Text)) {
+        qWarning() << "Failed to open style.qss:" << styleFile.errorString();
+        return;
     }
+    QTextStream stream(&styleFile);
+    QString styleSheet = stream.readAll();
+    styleFile.close();
+    if (styleSheet.isEmpty()) {
+        qWarning() << "style.qss is empty!";
+        return;
+    }
+    qWarning() << "Loaded style.qss, size:" << styleSheet.size();
+    this->setStyleSheet(styleSheet);
 }
 
 void v2raycpp::initUI()
@@ -102,7 +124,21 @@ void v2raycpp::initUI()
     // Connect double click signal for server list
     connect(ui.serverList, &QListWidget::doubleClicked, 
             this, &v2raycpp::onServerDoubleClicked);
+
+    // Connect server selection changed signal for details panel
+    connect(ui.serverList, &QListWidget::currentRowChanged,
+            this, &v2raycpp::onServerSelected);
+
+    // Connect Delete key for deleting selected server
+    ui.serverList->setSelectionMode(QAbstractItemView::SingleSelection);
+    ui.serverList->setContextMenuPolicy(Qt::CustomContextMenu);
     
+    QShortcut* deleteShortcut = new QShortcut(QKeySequence::Delete, this);
+    connect(deleteShortcut, &QShortcut::activated, this, &v2raycpp::onDeleteServerClicked);
+    
+    // Connect Enter key for editing selected server
+    QShortcut* enterShortcut = new QShortcut(Qt::Key_Return, this);
+    connect(enterShortcut, &QShortcut::activated, this, &v2raycpp::onEditServerClicked);    
     // Connect toolbar actions
     if (ui.actionStart)
     {
@@ -123,6 +159,34 @@ void v2raycpp::initUI()
     if (ui.actionSettings)
     {
         connect(ui.actionSettings, &QAction::triggered, this, &v2raycpp::onSettingsClicked);
+    }
+    
+    // Connect new UI buttons
+    if (ui.startProxyBtn)
+    {
+        connect(ui.startProxyBtn, &QPushButton::clicked, this, &v2raycpp::onStartClicked);
+    }
+    if (ui.btnAdd)
+    {
+        connect(ui.btnAdd, &QPushButton::clicked, this, &v2raycpp::onAddServerClicked);
+    }
+    if (ui.btnImport)
+    {
+        connect(ui.btnImport, &QPushButton::clicked, this, &v2raycpp::onImportClicked);
+    }
+    if (ui.btnSettings)
+    {
+        connect(ui.btnSettings, &QPushButton::clicked, this, &v2raycpp::onSettingsClicked);
+    }
+    if (ui.btnDisconnect)
+    {
+        connect(ui.btnDisconnect, &QPushButton::clicked, this, &v2raycpp::onStopClicked);
+    }
+
+    // Connect search box
+    if (ui.searchBox)
+    {
+        connect(ui.searchBox, &QLineEdit::textChanged, this, &v2raycpp::onSearchTextChanged);
     }
 }
 
@@ -183,6 +247,36 @@ void v2raycpp::updateUIStatus()
         ui.statusLabel->setText(statusText);
     }
     
+    // Update startProxyBtn text
+    if (ui.startProxyBtn)
+    {
+        if (m_currentStatus == CoreStatus::Running)
+        {
+            ui.startProxyBtn->setText("Stop");
+        }
+        else
+        {
+            ui.startProxyBtn->setText("Start");
+        }
+    }
+    
+    // Update speed labels to show 0 when stopped
+    if (m_currentStatus == CoreStatus::Stopped)
+    {
+        if (ui.downloadSpeedLabel)
+        {
+            ui.downloadSpeedLabel->setText("0 KB/s");
+        }
+        if (ui.uploadSpeedLabel)
+        {
+            ui.uploadSpeedLabel->setText("0 KB/s");
+        }
+        if (ui.ipLabel)
+        {
+            ui.ipLabel->setText("IP: --");
+        }
+    }
+    
     // Update toolbar actions enabled state
     if (ui.actionStart)
     {
@@ -197,20 +291,20 @@ void v2raycpp::updateUIStatus()
 void v2raycpp::updateStatusBar()
 {
     // Update current node label
-    if (ui.currentNodeLabel)
+    if (ui.statusLabel)
     {
         if (m_currentProfile.isValid())
         {
-            QString nodeInfo = QString("Server: %1 - %2:%3")
+            QString nodeInfo = QString("%1 - %2:%3")
                 .arg(QString::fromStdString(m_currentProfile.getRemark().empty() ? 
                       m_currentProfile.getAddress() : m_currentProfile.getRemark()))
                 .arg(QString::fromStdString(m_currentProfile.getAddress()))
                 .arg(m_currentProfile.getPort());
-            ui.currentNodeLabel->setText(nodeInfo);
+            ui.statusLabel->setText(nodeInfo);
         }
         else
         {
-            ui.currentNodeLabel->setText("No Server");
+            ui.statusLabel->setText("No Server");
         }
     }
     
@@ -372,12 +466,116 @@ void v2raycpp::loadConfig()
 {
     // Load application configuration
     AppConfig::instance().load();
+    
+    // Load server list from JSON file
+    QString configPath = AppConfig::instance().getConfigPath();
+    QString serversFile = configPath + "/servers.json";
+    
+    QFile file(serversFile);
+    if (!file.open(QIODevice::ReadOnly))
+    {
+        qDebug() << "No servers.json found, starting with empty list";
+        return;
+    }
+    
+    QByteArray data = file.readAll();
+    file.close();
+    
+    QJsonDocument doc = QJsonDocument::fromJson(data);
+    if (doc.isNull() || !doc.isObject())
+    {
+        qWarning() << "Invalid servers.json format";
+        return;
+    }
+    
+    QJsonObject root = doc.object();
+    QJsonArray servers = root["servers"].toArray();
+    
+    for (int i = 0; i < servers.size(); ++i)
+    {
+        QJsonObject serverObj = servers[i].toObject();
+        
+        ProfileItem profile;
+        profile.setAddress(serverObj["address"].toString().toStdString());
+        profile.setPort(serverObj["port"].toInt());
+        profile.setRemark(serverObj["remark"].toString().toStdString());
+        profile.setPassword(serverObj["password"].toString().toStdString());
+        profile.setSni(serverObj["sni"].toString().toStdString());
+        profile.setNetwork(serverObj["network"].toString().toStdString());
+        profile.setSecurity(serverObj["security"].toString().toStdString());
+        profile.setFingerprint(serverObj["fingerprint"].toString().toStdString());
+        profile.setAllowInsecure(serverObj["allowInsecure"].toBool());
+        profile.setUserId(serverObj["userId"].toString().toStdString());
+        profile.setAlterId(serverObj["alterId"].toString().toStdString());
+        
+        // Parse config type
+        QString configTypeStr = serverObj["configType"].toString();
+        if (configTypeStr == "VMess")
+            profile.setConfigType(EConfigType::VMess);
+        else if (configTypeStr == "VLESS")
+            profile.setConfigType(EConfigType::VLESS);
+        else if (configTypeStr == "Trojan")
+            profile.setConfigType(EConfigType::Trojan);
+        else if (configTypeStr == "Shadowsocks")
+            profile.setConfigType(EConfigType::Shadowsocks);
+        else
+            profile.setConfigType(EConfigType::Trojan);
+        
+        if (profile.isValid())
+        {
+            m_serverProfiles.push_back(profile);
+            addServerToList(profile);
+        }
+    }
+    
+    qDebug() << "Loaded" << m_serverProfiles.size() << "servers from config";
 }
 
 void v2raycpp::saveConfig()
 {
     // Save application configuration
     AppConfig::instance().save();
+    
+    // Save server list to JSON file
+    QString configPath = AppConfig::instance().getConfigPath();
+    QString serversFile = configPath + "/servers.json";
+    
+    QJsonObject root;
+    QJsonArray servers;
+    
+    for (const auto& profile : m_serverProfiles)
+    {
+        QJsonObject serverObj;
+        serverObj["address"] = QString::fromStdString(profile.getAddress());
+        serverObj["port"] = profile.getPort();
+        serverObj["remark"] = QString::fromStdString(profile.getRemark());
+        serverObj["password"] = QString::fromStdString(profile.getPassword());
+        serverObj["sni"] = QString::fromStdString(profile.getSni());
+        serverObj["network"] = QString::fromStdString(profile.getNetwork());
+        serverObj["security"] = QString::fromStdString(profile.getSecurity());
+        serverObj["fingerprint"] = QString::fromStdString(profile.getFingerprint());
+        serverObj["allowInsecure"] = profile.getAllowInsecure();
+        serverObj["userId"] = QString::fromStdString(profile.getUserId());
+        serverObj["alterId"] = QString::fromStdString(profile.getAlterId());
+        serverObj["configType"] = QString::fromStdString(profile.getConfigTypeString());
+        
+        servers.append(serverObj);
+    }
+    
+    root["servers"] = servers;
+    
+    QJsonDocument doc(root);
+    QFile file(serversFile);
+    if (!file.open(QIODevice::WriteOnly))
+    {
+        qWarning() << "Failed to open servers.json for writing:" << serversFile;
+        return;
+    }
+    
+    file.write(doc.toJson(QJsonDocument::Indented));
+    file.close();
+    
+    qDebug() << "Saved" << m_serverProfiles.size() << "servers to config";
 }
 
 // ==================== Slot Implementations ====================
@@ -426,10 +624,13 @@ void v2raycpp::onStartClicked()
         // Record start time
         m_startTime = QDateTime::currentDateTime();
         
+        // Start traffic statistics timer
+        startStatsTimer();
+        
         // Update UI
         updateStatusBar();
         
-        statusBar()->showMessage("Started", 3000);
+        // statusBar()->showMessage() removed - using statusLabel instead
     }
     else
     {
@@ -448,6 +649,12 @@ void v2raycpp::onStopClicked()
     // Stop core
     if (m_coreManager->stopCore())
     {
+        // Stop traffic statistics timer
+        stopStatsTimer();
+        
+        // Stop auto reconnect timer (user manually stopped)
+        stopReconnectTimer();
+        
         // Clear system proxy
         m_sysProxyHandler->clearProxy();
         
@@ -457,7 +664,7 @@ void v2raycpp::onStopClicked()
         // Update UI
         updateStatusBar();
         
-        statusBar()->showMessage("Stopped", 3000);
+        // statusBar()->showMessage() removed - using statusLabel instead
     }
     else
     {
@@ -496,7 +703,7 @@ void v2raycpp::onImportClicked()
         // Select the new item
         ui.serverList->setCurrentRow(ui.serverList->count() - 1);
         
-        statusBar()->showMessage("Server imported", 3000);
+        // statusBar()->showMessage() removed - using statusLabel instead
     }
     else
     {
@@ -569,7 +776,7 @@ void v2raycpp::onAddServerClicked()
             
             ui.serverList->setCurrentRow(ui.serverList->count() - 1);
             
-            statusBar()->showMessage("Server added", 3000);
+            // statusBar()->showMessage() removed - using statusLabel instead
         }
         else
         {
@@ -583,6 +790,192 @@ void v2raycpp::onSettingsClicked()
     show();
     activateWindow();
     QMessageBox::information(this, "Settings", "Settings dialog not implemented yet");
+}
+
+void v2raycpp::onDeleteServerClicked()
+{
+    int currentRow = ui.serverList->currentRow();
+    
+    if (currentRow < 0)
+    {
+        QMessageBox::warning(this, "Warning", "Please select a server to delete");
+        return;
+    }
+    
+    // Get the profile being deleted
+    ProfileItem deletedProfile = m_serverProfiles[currentRow];
+    
+    // Check if this is the currently connected profile
+    bool isCurrentlyConnected = (m_currentProfile.isValid() && 
+        m_currentProfile.getAddress() == deletedProfile.getAddress() &&
+        m_currentProfile.getPort() == deletedProfile.getPort());
+    
+    // If connected, disconnect first
+    if (isCurrentlyConnected && m_currentStatus == CoreStatus::Running)
+    {
+        onStopClicked();
+        m_currentProfile = ProfileItem();
+    }
+    
+    // Remove from vector
+    m_serverProfiles.erase(m_serverProfiles.begin() + currentRow);
+    
+    // Remove from list widget
+    delete ui.serverList->takeItem(currentRow);
+    
+    // Save configuration after deletion
+    saveConfig();
+    
+    // If we deleted the current profile, clear it
+    if (isCurrentlyConnected)
+    {
+        m_currentProfile = ProfileItem();
+        updateStatusBar();
+    }
+}
+
+void v2raycpp::onEditServerClicked()
+{
+    int currentRow = ui.serverList->currentRow();
+    
+    if (currentRow < 0)
+    {
+        QMessageBox::warning(this, "Warning", "Please select a server to edit");
+        return;
+    }
+    
+    // Get the current profile
+    ProfileItem& profile = m_serverProfiles[currentRow];
+    
+    // Create edit dialog
+    QDialog dialog(this);
+    dialog.setWindowTitle("Edit Server");
+    dialog.setMinimumWidth(400);
+    
+    QVBoxLayout* layout = new QVBoxLayout(&dialog);
+    
+    // Remark
+    QLabel* remarkLabel = new QLabel("Remark:", &dialog);
+    QLineEdit* remarkEdit = new QLineEdit(&dialog);
+    remarkEdit->setText(QString::fromStdString(profile.getRemark()));
+    layout->addWidget(remarkLabel);
+    layout->addWidget(remarkEdit);
+    
+    // Address
+    QLabel* addressLabel = new QLabel("Address:", &dialog);
+    QLineEdit* addressEdit = new QLineEdit(&dialog);
+    addressEdit->setText(QString::fromStdString(profile.getAddress()));
+    layout->addWidget(addressLabel);
+    layout->addWidget(addressEdit);
+    
+    // Port
+    QLabel* portLabel = new QLabel("Port:", &dialog);
+    QLineEdit* portEdit = new QLineEdit(&dialog);
+    portEdit->setText(QString::number(profile.getPort()));
+    layout->addWidget(portLabel);
+    layout->addWidget(portEdit);
+    
+    // Password
+    QLabel* passwordLabel = new QLabel("Password:", &dialog);
+    QLineEdit* passwordEdit = new QLineEdit(&dialog);
+    passwordEdit->setText(QString::fromStdString(profile.getPassword()));
+    passwordEdit->setEchoMode(QLineEdit::Password);
+    layout->addWidget(passwordLabel);
+    layout->addWidget(passwordEdit);
+    
+    // SNI
+    QLabel* sniLabel = new QLabel("SNI (Optional):", &dialog);
+    QLineEdit* sniEdit = new QLineEdit(&dialog);
+    sniEdit->setText(QString::fromStdString(profile.getSni()));
+    layout->addWidget(sniLabel);
+    layout->addWidget(sniEdit);
+    
+    // Network
+    QLabel* networkLabel = new QLabel("Network (tcp/ws):", &dialog);
+    QLineEdit* networkEdit = new QLineEdit(&dialog);
+    networkEdit->setText(QString::fromStdString(profile.getNetwork()));
+    layout->addWidget(networkLabel);
+    layout->addWidget(networkEdit);
+    
+    // Security
+    QLabel* securityLabel = new QLabel("Security (tls/none):", &dialog);
+    QLineEdit* securityEdit = new QLineEdit(&dialog);
+    securityEdit->setText(QString::fromStdString(profile.getSecurity()));
+    layout->addWidget(securityLabel);
+    layout->addWidget(securityEdit);
+    
+    // Buttons
+    QDialogButtonBox* buttons = new QDialogButtonBox(
+        QDialogButtonBox::Ok | QDialogButtonBox::Cancel,
+        &dialog);
+    layout->addWidget(buttons);
+    
+    connect(buttons, &QDialogButtonBox::accepted, &dialog, &QDialog::accept);
+    connect(buttons, &QDialogButtonBox::rejected, &dialog, &QDialog::reject);
+    
+    if (dialog.exec() == QDialog::Accepted)
+    {
+        // Update profile with new values
+        profile.setRemark(remarkEdit->text().toStdString());
+        profile.setAddress(addressEdit->text().toStdString());
+        profile.setPort(portEdit->text().toInt());
+        profile.setPassword(passwordEdit->text().toStdString());
+        profile.setSni(sniEdit->text().toStdString());
+        profile.setNetwork(networkEdit->text().toStdString());
+        profile.setSecurity(securityEdit->text().toStdString());
+        
+        // Update current profile if it's the one being edited
+        if (m_currentProfile.isValid() && 
+            m_currentProfile.getAddress() == profile.getAddress() &&
+            m_currentProfile.getPort() == profile.getPort())
+        {
+            m_currentProfile = profile;
+        }
+        
+        // Update the list item text
+        QString itemText = QString("%1 - %2:%3")
+            .arg(QString::fromStdString(profile.getRemark().empty() ? 
+                  profile.getAddress() : profile.getRemark()))
+            .arg(QString::fromStdString(profile.getAddress()))
+            .arg(profile.getPort());
+        ui.serverList->item(currentRow)->setText(itemText);
+        
+        // Save configuration
+        saveConfig();
+        
+        // Update status bar
+        updateStatusBar();
+    }
+}
+
+void v2raycpp::onCustomContextMenu(const QPoint& pos)
+{
+    // Get the item at the cursor position
+    QListWidgetItem* item = ui.serverList->itemAt(pos);
+    
+    if (!item) return;
+    
+    // Create context menu
+    QMenu menu(this);
+    
+    // Add menu actions
+    QAction* startAction = menu.addAction("Start");
+    QAction* editAction = menu.addAction("Edit");
+    QAction* deleteAction = menu.addAction("Delete");
+    QAction* latencyAction = menu.addAction("Test Latency");
+    
+    // Show menu at cursor position
+    QAction* selectedAction = menu.exec(ui.serverList->mapToGlobal(pos));
+    
+    if (selectedAction == startAction) {
+        onStartClicked();
+    } else if (selectedAction == editAction) {
+        onEditServerClicked();
+    } else if (selectedAction == deleteAction) {
+        onDeleteServerClicked();
+    } else if (selectedAction == latencyAction) {
+        onRefreshLatencyClicked();
+    }
 }
 
 void v2raycpp::onServerDoubleClicked(const QModelIndex& index)
@@ -601,6 +994,49 @@ void v2raycpp::onServerDoubleClicked(const QModelIndex& index)
     }
 }
 
+void v2raycpp::onServerSelected(int currentRow)
+{
+    if (currentRow >= 0 && currentRow < (int)m_serverProfiles.size())
+    {
+        // Get selected profile
+        const ProfileItem& profile = m_serverProfiles[currentRow];
+        
+        // Build detailed info string
+        QString remark = QString::fromStdString(profile.getRemark().empty() ?
+                            profile.getAddress() : profile.getRemark());
+        QString address = QString::fromStdString(profile.getAddress());
+        int port = profile.getPort();
+        QString configType = QString::fromStdString(profile.getConfigTypeString());
+        int latency = profile.getLatency();
+        
+        // Build detail string
+        QString latencyStr = (latency >= 0) ? QString("%1 ms").arg(latency) : "--";
+        QString statusStr = (m_currentStatus == CoreStatus::Running) ? "Running" : "Stopped";
+        
+        QString detailInfo = QString("%1 | %2:%3 | %4 | Latency: %5 | Status: %6")
+            .arg(remark)
+            .arg(address)
+            .arg(port)
+            .arg(configType)
+            .arg(latencyStr)
+            .arg(statusStr);
+        
+        // Update status label with detailed info
+        if (ui.statusLabel)
+        {
+            ui.statusLabel->setText(detailInfo);
+        }
+    }
+    else
+    {
+        // No valid selection
+        if (ui.statusLabel)
+        {
+            ui.statusLabel->setText("No Server Selected");
+        }
+    }
+}
+
 void v2raycpp::onLogOutput(const QString& log)
 {
     // Log to debug output
@@ -611,7 +1047,7 @@ void v2raycpp::onErrorOutput(const QString& error)
 {
     // Log error
     qWarning() << "[Core Error]" << error;
-    statusBar()->showMessage("Error: " + error, 5000);
+    // statusBar()->showMessage() removed - using statusLabel instead
 }
 
 void v2raycpp::onStatusChanged(CoreStatus status)
@@ -623,12 +1059,19 @@ void v2raycpp::onStatusChanged(CoreStatus status)
     switch (status)
     {
         case CoreStatus::Running:
-            statusBar()->showMessage("Running", 3000);
+            // Stop reconnect timer when running
+            stopReconnectTimer();
+            // statusBar()->showMessage() removed - using statusLabel instead
             break;
         case CoreStatus::Stopped:
             // Clear proxy when stopped
             m_sysProxyHandler->clearProxy();
-            statusBar()->showMessage("Stopped", 3000);
+            // Start auto reconnect if enabled and was previously running
+            if (m_autoReconnect && m_currentProfile.isValid())
+            {
+                startReconnectTimer();
+            }
+            // statusBar()->showMessage() removed - using statusLabel instead
             break;
         default:
             break;
@@ -656,6 +1099,12 @@ void v2raycpp::onProcessFinished(int exitCode, QProcess::ExitStatus exitStatus)
     {
         QMessageBox::warning(this, "Warning", 
             QString("Core process crashed with code: %1").arg(exitCode));
+    }
+    
+    // Start auto reconnect if enabled and was previously connected
+    if (m_autoReconnect && m_currentProfile.isValid())
+    {
+        startReconnectTimer();
     }
 }
 
@@ -719,7 +1168,7 @@ void v2raycpp::onEnableSystemProxy()
     {
         int localPort = AppConfig::instance().getLocalPort();
         m_sysProxyHandler->setProxy(QString("127.0.0.1:%1").arg(localPort).toStdString());
-        statusBar()->showMessage("System proxy enabled", 3000);
+        // statusBar()->showMessage() removed - using statusLabel instead
     }
     else
     {
@@ -730,7 +1179,71 @@ void v2raycpp::onEnableSystemProxy()
 void v2raycpp::onDisableSystemProxy()
 {
     m_sysProxyHandler->clearProxy();
-    statusBar()->showMessage("System proxy disabled", 3000);
+    // statusBar()->showMessage() removed - using statusLabel instead
+}
+
+
+// ==================== Latency Test Functions ====================
+
+void v2raycpp::testLatency(const QString& address, int port)
+{
+    QElapsedTimer timer;
+    timer.start();
+    
+    QTcpSocket socket;
+    socket.connectToHost(address, port);
+    
+    if (socket.waitForConnected(3000)) {
+        int latency = timer.elapsed();
+        qDebug() << "Latency test result:" << address << ":" << port << "-" << latency << "ms";
+    } else {
+        qDebug() << "Latency test failed:" << address << ":" << port;
+    }
+}
+
+void v2raycpp::onRefreshLatencyClicked()
+{
+    // Test latency for all servers in the list
+    for (int i = 0; i < m_serverProfiles.size(); ++i)
+    {
+        ProfileItem& profile = m_serverProfiles[i];
+        
+        // Test TCP connection latency
+        QElapsedTimer timer;
+        timer.start();
+        
+        QTcpSocket socket;
+        socket.connectToHost(QString::fromStdString(profile.getAddress()), profile.getPort());
+        
+        if (socket.waitForConnected(3000)) {
+            int latency = timer.elapsed();
+            profile.setLatency(latency);
+        } else {
+            profile.setLatency(-1);  // Failed to connect
+        }
+        
+        // Update the list item text with latency
+        QString latencyStr;
+        if (profile.getLatency() > 0) {
+            latencyStr = QString::number(profile.getLatency()) + "ms";
+        } else {
+            latencyStr = "--";
+        }
+        
+        QString itemText = QString("%1 - %2:%3 - %4")
+            .arg(QString::fromStdString(profile.getRemark().empty() ?
+                  profile.getAddress() : profile.getRemark()))
+            .arg(QString::fromStdString(profile.getAddress()))
+            .arg(profile.getPort())
+            .arg(latencyStr);
+        
+        if (i < ui.serverList->count()) {
+            ui.serverList->item(i)->setText(itemText);
+        }
+        
+        // Small delay between tests to avoid overwhelming
+        QThread::msleep(100);
+    }
 }
 
 // ==================== Helper Functions ====================
@@ -786,4 +1299,166 @@ bool v2raycpp::parseProfileFromUrl(const QString& url, ProfileItem& profile)
     }
     
     return false;
+}
+
+// ==================== Traffic Statistics ====================
+
+void v2raycpp::startStatsTimer()
+{
+    // Reset counters
+    m_bytesReceived = 0;
+    m_bytesSent = 0;
+    m_lastBytesReceived = 0;
+    m_lastBytesSent = 0;
+    
+    // Create timer if not exists
+    if (!m_statsTimer)
+    {
+        m_statsTimer = new QTimer(this);
+        connect(m_statsTimer, &QTimer::timeout, this, &v2raycpp::updateStats);
+    }
+    
+    // Start timer with 1 second interval
+    m_statsTimer->start(1000);
+}
+
+void v2raycpp::stopStatsTimer()
+{
+    // Stop timer
+    if (m_statsTimer)
+    {
+        m_statsTimer->stop();
+    }
+    
+    // Reset display
+    if (ui.downloadSpeedLabel)
+    {
+        ui.downloadSpeedLabel->setText("0 KB/s");
+    }
+    if (ui.uploadSpeedLabel)
+    {
+        ui.uploadSpeedLabel->setText("0 KB/s");
+    }
+}
+
+void v2raycpp::updateStats()
+{
+    // Simple implementation: generate random speed for demonstration
+    // In production, you would get actual network statistics from system APIs
+    
+    // Simulate some traffic (replace with actual implementation)
+    static int tick = 0;
+    tick++;
+    
+    // Generate pseudo-random speed values for demo
+    // Download: 100KB/s - 5MB/s
+    qint64 downloadSpeed = (100 + (tick * 37) % 5000) * 1024;
+    // Upload: 50KB/s - 1MB/s
+    qint64 uploadSpeed = (50 + (tick * 23) % 1000) * 1024;
+    
+    // Format download speed
+    QString downloadStr;
+    if (downloadSpeed >= 1024 * 1024)
+    {
+        downloadStr = QString("�?%1 MB/s").arg(downloadSpeed / (1024.0 * 1024.0), 0, 'f', 1);
+    }
+    else
+    {
+        downloadStr = QString("�?%1 KB/s").arg(downloadSpeed / 1024.0, 0, 'f', 1);
+    }
+    
+    // Format upload speed
+    QString uploadStr;
+    if (uploadSpeed >= 1024 * 1024)
+    {
+        uploadStr = QString("�?%1 MB/s").arg(uploadSpeed / (1024.0 * 1024.0), 0, 'f', 1);
+    }
+    else
+    {
+        uploadStr = QString("�?%1 KB/s").arg(uploadSpeed / 1024.0, 0, 'f', 1);
+    }
+    
+    // Update UI labels
+    if (ui.downloadSpeedLabel)
+    {
+        ui.downloadSpeedLabel->setText(downloadStr);
+    }
+    if (ui.uploadSpeedLabel)
+    {
+        ui.uploadSpeedLabel->setText(uploadStr);
+    }
+}
+
+
+
+
+
+
+void v2raycpp::onSearchTextChanged(const QString& text)
+{
+    QString searchText = text.trimmed().toLower();
+    
+    for (int i = 0; i < ui.serverList->count(); ++i)
+    {
+        QListWidgetItem* item = ui.serverList->item(i);
+        if (item)
+        {
+            QString itemText = item->text().toLower();
+            bool match = searchText.isEmpty() || itemText.contains(searchText);
+            item->setHidden(!match);
+        }
+    }
+}
+
+// ==================== Auto Reconnect ====================
+
+void v2raycpp::startReconnectTimer()
+{
+    // Stop existing timer if any
+    stopReconnectTimer();
+    
+    // Create timer if not exists
+    if (!m_reconnectTimer)
+    {
+        m_reconnectTimer = new QTimer(this);
+        connect(m_reconnectTimer, &QTimer::timeout, this, &v2raycpp::onReconnectTimeout);
+    }
+    
+    // Start timer with 3 second delay
+    qDebug() << "Starting auto reconnect timer...";
+    m_reconnectTimer->start(3000);
+}
+
+void v2raycpp::stopReconnectTimer()
+{
+    if (m_reconnectTimer)
+    {
+        m_reconnectTimer->stop();
+        qDebug() << "Stopped auto reconnect timer";
+    }
+}
+
+void v2raycpp::onReconnectTimeout()
+{
+    qDebug() << "Auto reconnect timeout, restarting...";
+    
+    // Stop the timer
+    stopReconnectTimer();
+    
+    // Check if we have a valid profile
+    if (!m_currentProfile.isValid())
+    {
+        qDebug() << "No valid profile for reconnect";
+        return;
+    }
+    
+    // Check if already running (might have been restarted)
+    if (m_currentStatus == CoreStatus::Running)
+    {
+        qDebug() << "Already running, skipping reconnect";
+        return;
+    }
+    
+    // Restart the connection
+    onStartClicked();
 }
