@@ -4,6 +4,9 @@
 #include <QDebug>
 #include <QStandardPaths>
 #include <QThread>
+#include <QJsonDocument>
+#include <QJsonArray>
+#include <QJsonObject>
 
 // ============ CoreManager Implementation ============
 
@@ -213,6 +216,118 @@ void CoreManager::setCoreExePath(const QString& path)
 {
     m_coreExePath = path;
     AppConfig::instance().setCorePath(path);
+}
+
+// ============ Xray API Implementation ============
+
+QString CoreManager::getXrayApiPath() const
+{
+    return m_xrayApiPath;
+}
+
+void CoreManager::setXrayApiPath(const QString& path)
+{
+    m_xrayApiPath = path;
+}
+
+QString CoreManager::callXrayApi(const QString& command)
+{
+    QString apiPath = m_xrayApiPath;
+    if (apiPath.isEmpty())
+    {
+        // Default to xray-api.exe in the same directory as xray.exe
+        QFileInfo coreInfo(m_coreExePath);
+        apiPath = coreInfo.absolutePath() + "/xray-api.exe";
+    }
+
+    QProcess process;
+    process.start(apiPath, QStringList() << "-cmd" << command);
+    
+    if (!process.waitForFinished(5000))
+    {
+        return QString("{\"error\": \"timeout\"}");
+    }
+    
+    QString output = process.readAllStandardOutput();
+    return output;
+}
+
+QStringList CoreManager::listInbounds()
+{
+    QString result = callXrayApi("list_inbounds");
+    QStringList tags;
+    
+    // Parse JSON response to extract inbound tags
+    QJsonDocument doc = QJsonDocument::fromJson(result.toUtf8());
+    if (doc.isObject() && doc.object().contains("inbounds"))
+    {
+        QJsonArray inbounds = doc.object()["inbounds"].toArray();
+        for (const QJsonValue& ib : inbounds)
+        {
+            tags.append(ib.toObject()["tag"].toString());
+        }
+    }
+    
+    return tags;
+}
+
+QStringList CoreManager::listOutbounds()
+{
+    QString result = callXrayApi("list_outbounds");
+    QStringList tags;
+    
+    // Parse JSON response to extract outbound tags
+    QJsonDocument doc = QJsonDocument::fromJson(result.toUtf8());
+    if (doc.isObject() && doc.object().contains("outbounds"))
+    {
+        QJsonArray outbounds = doc.object()["outbounds"].toArray();
+        for (const QJsonValue& ob : outbounds)
+        {
+            tags.append(ob.toObject()["tag"].toString());
+        }
+    }
+    
+    return tags;
+}
+
+bool CoreManager::removeInbound(const QString& tag)
+{
+    QProcess process;
+    QString apiPath = m_xrayApiPath;
+    if (apiPath.isEmpty())
+    {
+        QFileInfo coreInfo(m_coreExePath);
+        apiPath = coreInfo.absolutePath() + "/xray-api.exe";
+    }
+    
+    process.start(apiPath, QStringList() << "-cmd" << "remove_inbound" << "-tag" << tag);
+    
+    if (!process.waitForFinished(5000))
+    {
+        return false;
+    }
+    
+    return process.exitCode() == 0;
+}
+
+bool CoreManager::removeOutbound(const QString& tag)
+{
+    QProcess process;
+    QString apiPath = m_xrayApiPath;
+    if (apiPath.isEmpty())
+    {
+        QFileInfo coreInfo(m_coreExePath);
+        apiPath = coreInfo.absolutePath() + "/xray-api.exe";
+    }
+    
+    process.start(apiPath, QStringList() << "-cmd" << "remove_outbound" << "-tag" << tag);
+    
+    if (!process.waitForFinished(5000))
+    {
+        return false;
+    }
+    
+    return process.exitCode() == 0;
 }
 
 // ============ Private Slots ============

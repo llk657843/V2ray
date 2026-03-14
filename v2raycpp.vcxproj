@@ -96,7 +96,11 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <None Include="style.qss"><CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory></None><ClInclude Include="include\V2rayConfig.h" />
+    <QtMoc Include="include\XrayApiClient.h" />
+    <None Include="style.qss">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <ClInclude Include="include\V2rayConfig.h" />
     <QtRcc Include="v2raycpp.qrc" />
     <QtUic Include="v2raycpp.ui" />
     <QtMoc Include="v2raycpp.h" />
@@ -111,6 +115,7 @@
     <ClCompile Include="src\AppConfig.cpp" />
     <ClCompile Include="src\ConfigGenerator.cpp" />
     <ClCompile Include="src\Routing.cpp" />
+    <ClCompile Include="src\XrayApiClient.cpp" />
     <QtMoc Include="include\CoreManager.h" />
     <ClInclude Include="include\Inbounds.h" />
     <QtMoc Include="include\Logger.h" />

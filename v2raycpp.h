@@ -15,7 +15,7 @@
 #include "ProfileItem.h"
 #include "TrayIcon.h"
 
-class v2raycpp : public QMainWindow
+class v2raycpp : public QWidget
 {
     Q_OBJECT
 
@@ -23,7 +23,13 @@ public:
     v2raycpp(QWidget *parent = nullptr);
     ~v2raycpp();
 
+protected:
+    void mousePressEvent(QMouseEvent *event) override;
+    void mouseMoveEvent(QMouseEvent *event) override;
+    void mouseReleaseEvent(QMouseEvent *event) override;
+
 private slots:
+    void onCloseClicked();
     void onStartClicked();
     void onStopClicked();
     void onImportClicked();
@@ -87,4 +93,8 @@ private:
     CoreStatus m_currentStatus = CoreStatus::Stopped;
     std::unique_ptr<TrayIcon> m_trayIcon;
     QDateTime m_startTime;
+
+    // For window dragging
+    bool m_dragging;
+    QPoint m_dragPosition;
 };

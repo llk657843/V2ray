@@ -101,7 +101,7 @@ bool SysProxyHandler::setProxy(const std::string& proxyServer, const std::string
 /// </summary>
 bool SysProxyHandler::clearProxy()
 {
-    return setProxy("""", """", false);
+    return setProxy("", "", false);
 }
 
 /// <summary>
@@ -265,7 +265,7 @@ std::wstring SysProxyHandler::readRegistryString(const wchar_t* valueName) const
     LONG result = RegOpenKeyExW(HKEY_CURRENT_USER, REGISTRY_PATH, 0, KEY_READ, &hKey);
     if (result != ERROR_SUCCESS)
     {
-        return L"""";
+        return L"";
     }
     
     wchar_t buffer[4096];
@@ -279,7 +279,7 @@ std::wstring SysProxyHandler::readRegistryString(const wchar_t* valueName) const
     
     if (result != ERROR_SUCCESS || dataType != REG_SZ)
     {
-        return L"""";
+        return L"";
     }
     
     return std::wstring(buffer);

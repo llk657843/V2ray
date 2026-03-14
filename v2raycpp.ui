@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
  <class>v2raycppClass</class>
- <widget class="QMainWindow" name="v2raycppClass">
+ <widget class="QWidget" name="v2raycppClass">
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -10,64 +10,33 @@
     <height>700</height>
    </rect>
   </property>
-  <property name="windowTitle">
-   <string>v2raycpp</string>
-  </property>
   <property name="minimumSize">
    <size>
     <width>900</width>
     <height>600</height>
    </size>
   </property>
-  <widget class="QMenuBar" name="menuBar">
-   <property name="geometry">
-    <rect>
-     <x>0</x>
-     <y>0</y>
-     <width>1100</width>
-     <height>21</height>
-    </rect>
-   </property>
-   <widget class="QMenu" name="menuFile">
-    <property name="title">
-     <string>文件</string>
-    </property>
-   </widget>
-   <widget class="QMenu" name="menuServer">
-    <property name="title">
-     <string>服务器</string>
-    </property>
-   </widget>
-   <widget class="QMenu" name="menuHelp">
-    <property name="title">
-     <string>帮助</string>
-    </property>
-   </widget>
-   <addaction name="menuFile"/>
-   <addaction name="menuServer"/>
-   <addaction name="menuHelp"/>
-  </widget>
-  <widget class="QWidget" name="centralWidget">
-   <layout class="QHBoxLayout" name="mainLayout">
-    <property name="spacing">
-     <number>0</number>
-    </property>
-    <property name="margin">
-     <number>0</number>
-    </property>
-    <item>
-     <widget class="QWidget" name="sidebarWidget">
-      <property name="minimumSize">
-       <size>
-        <width>256</width>
-        <height>0</height>
-       </size>
-      </property>
+  <property name="windowTitle">
+   <string>v2raycpp</string>
+  </property>
+  <layout class="QVBoxLayout" name="verticalLayout">
+   <item>
+    <layout class="QHBoxLayout" name="mainLayout">
+     <property name="spacing">
+      <number>0</number>
+     </property>
+     <property name="margin" stdset="0">
+      <number>0</number>
+     </property>
+     <item>
       <layout class="QVBoxLayout" name="sidebarLayout">
+       <property name="topMargin">
+        <number>5</number>
+       </property>
        <item>
         <widget class="QLabel" name="logoTextLabel">
          <property name="text">
-          <string>ProxyClient</string>
+          <string>代理客户端</string>
          </property>
         </widget>
        </item>
@@ -104,17 +73,23 @@
        <item>
         <spacer name="navSpacer">
          <property name="orientation">
-          <enum>Qt::Vertical</enum>
+          <enum>Qt::Orientation::Vertical</enum>
          </property>
          <property name="sizeType">
-          <enum>QSizePolicy::Expanding</enum>
+          <enum>QSizePolicy::Policy::Expanding</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>0</width>
+           <height>0</height>
+          </size>
          </property>
         </spacer>
        </item>
        <item>
         <widget class="QPushButton" name="btnDisconnect">
          <property name="text">
-          <string>Disconnect</string>
+          <string>断开连接</string>
          </property>
          <property name="flat">
           <bool>true</bool>
@@ -122,84 +97,124 @@
         </widget>
        </item>
       </layout>
-     </widget>
-    </item>
-    <item>
-     <widget class="QWidget" name="contentWidget">
+     </item>
+     <item>
       <layout class="QVBoxLayout" name="contentLayout">
        <item>
-        <widget class="QWidget" name="headerWidget">
-         <property name="minimumSize">
-          <size>
-           <width>0</width>
-           <height>80</height>
-          </size>
+        <layout class="QHBoxLayout" name="headerLayout">
+         <property name="leftMargin">
+          <number>10</number>
          </property>
-         <layout class="QHBoxLayout" name="headerLayout">
-          <item>
-           <widget class="QPushButton" name="startProxyBtn">
-            <property name="minimumSize">
-             <size>
-              <width>160</width>
-              <height>40</height>
-             </size>
-            </property>
-            <property name="text">
-             <string>Start Proxy</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QPushButton" name="btnAdd">
-            <property name="minimumSize">
-             <size>
-              <width>36</width>
-              <height>36</height>
-             </size>
-            </property>
-            <property name="text">
-             <string>+</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QPushButton" name="btnImport">
-            <property name="minimumSize">
-             <size>
-              <width>36</width>
-              <height>36</height>
-             </size>
-            </property>
-            <property name="text">
-             <string>Import</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <spacer name="headerSpacer">
-            <property name="orientation">
-             <enum>Qt::Horizontal</enum>
-            </property>
-            <property name="sizeType">
-             <enum>QSizePolicy::Expanding</enum>
-            </property>
-           </spacer>
-          </item>
-          <item>
-           <widget class="QLineEdit" name="searchBox">
-            <property name="minimumSize">
-             <size>
-              <width>200</width>
-              <height>36</height>
-             </size>
-            </property>
-            <property name="placeholderText">
-             <string>Search nodes...</string>
-            </property>
-           </widget>
-          </item>
-         </layout>
-        </widget>
+         <property name="rightMargin">
+          <number>10</number>
+         </property>
+         <item>
+          <widget class="QPushButton" name="startProxyBtn">
+           <property name="minimumSize">
+            <size>
+             <width>160</width>
+             <height>40</height>
+            </size>
+           </property>
+           <property name="text">
+            <string>运行</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="btnAdd">
+           <property name="minimumSize">
+            <size>
+             <width>36</width>
+             <height>36</height>
+            </size>
+           </property>
+           <property name="text">
+            <string>+</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="btnImport">
+           <property name="minimumSize">
+            <size>
+             <width>36</width>
+             <height>36</height>
+            </size>
+           </property>
+           <property name="text">
+            <string>导入</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <spacer name="headerSpacer">
+           <property name="orientation">
+            <enum>Qt::Orientation::Horizontal</enum>
+           </property>
+           <property name="sizeType">
+            <enum>QSizePolicy::Policy::Expanding</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>0</width>
+             <height>0</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
+         <item>
+          <spacer name="headerSpacer">
+           <property name="orientation">
+            <enum>Qt::Orientation::Horizontal</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>40</width>
+             <height>20</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
+         <item>
+          <widget class="QLineEdit" name="searchBox">
+           <property name="minimumSize">
+            <size>
+             <width>200</width>
+             <height>36</height>
+            </size>
+           </property>
+           <property name="text">
+            <string>搜索节点</string>
+           </property>
+           <property name="placeholderText">
+            <string>Search nodes...</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="btnClose">
+           <property name="minimumSize">
+            <size>
+             <width>36</width>
+             <height>36</height>
+            </size>
+           </property>
+           <property name="maximumSize">
+            <size>
+             <width>36</width>
+             <height>36</height>
+            </size>
+           </property>
+           <property name="text">
+            <string>✕</string>
+           </property>
+           <property name="flat">
+            <bool>true</bool>
+           </property>
+          </widget>
+         </item>
+        </layout>
        </item>
        <item>
         <widget class="QListWidget" name="serverList">
@@ -207,72 +222,76 @@
           <bool>true</bool>
          </property>
          <property name="selectionMode">
-          <enum>QAbstractItemView::SingleSelection</enum>
+          <enum>QAbstractItemView::SelectionMode::SingleSelection</enum>
          </property>
         </widget>
        </item>
        <item>
-        <widget class="QWidget" name="statusBarWidget">
-         <property name="minimumSize">
-          <size>
-           <width>0</width>
-           <height>48</height>
-          </size>
+        <layout class="QHBoxLayout" name="statusBarLayout">
+         <property name="leftMargin">
+          <number>10</number>
          </property>
-         <layout class="QHBoxLayout" name="statusBarLayout">
-          <item>
-           <widget class="QLabel" name="statusLabel">
-            <property name="text">
-             <string>未连接</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QLabel" name="downloadSpeedLabel">
-            <property name="text">
-             <string>0 KB/s</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QLabel" name="uploadSpeedLabel">
-            <property name="text">
-             <string>0 KB/s</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <spacer name="statusBarSpacer">
-            <property name="orientation">
-             <enum>Qt::Horizontal</enum>
-            </property>
-            <property name="sizeType">
-             <enum>QSizePolicy::Expanding</enum>
-            </property>
-           </spacer>
-          </item>
-          <item>
-           <widget class="QLabel" name="ipLabel">
-            <property name="text">
-             <string>IP: ---</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QLabel" name="startTimeLabel">
-            <property name="text">
-             <string>运行时间: --</string>
-            </property>
-           </widget>
-          </item>
-         </layout>
-        </widget>
+         <property name="rightMargin">
+          <number>10</number>
+         </property>
+         <item>
+          <widget class="QLabel" name="statusLabel">
+           <property name="text">
+            <string>未连接</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLabel" name="downloadSpeedLabel">
+           <property name="text">
+            <string>0 KB/s</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLabel" name="uploadSpeedLabel">
+           <property name="text">
+            <string>0 KB/s</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <spacer name="statusBarSpacer">
+           <property name="orientation">
+            <enum>Qt::Orientation::Horizontal</enum>
+           </property>
+           <property name="sizeType">
+            <enum>QSizePolicy::Policy::Expanding</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>0</width>
+             <height>0</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
+         <item>
+          <widget class="QLabel" name="ipLabel">
+           <property name="text">
+            <string>IP: ---</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLabel" name="startTimeLabel">
+           <property name="text">
+            <string>运行时间: --</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
        </item>
       </layout>
-     </widget>
-    </item>
-   </layout>
-  </widget>
+     </item>
+    </layout>
+   </item>
+  </layout>
   <action name="actionStart">
    <property name="text">
     <string>启动</string>

@@ -99,6 +99,45 @@ public:
     /// <param name="path">Core executable path</param>
     void setCoreExePath(const QString& path);
 
+    // ============ Xray API Functions ============
+
+    /// <summary>
+    /// Get xray-api executable path
+    /// </summary>
+    QString getXrayApiPath() const;
+
+    /// <summary>
+    /// Set xray-api executable path
+    /// </summary>
+    void setXrayApiPath(const QString& path);
+
+    /// <summary>
+    /// Call xray API via gRPC
+    /// </summary>
+    /// <param name="command">API command (list_inbounds, list_outbounds, etc.)</param>
+    /// <returns>JSON response string</returns>
+    QString callXrayApi(const QString& command);
+
+    /// <summary>
+    /// List all inbound handlers
+    /// </summary>
+    QStringList listInbounds();
+
+    /// <summary>
+    /// List all outbound handlers
+    /// </summary>
+    QStringList listOutbounds();
+
+    /// <summary>
+    /// Remove an inbound handler
+    /// </summary>
+    bool removeInbound(const QString& tag);
+
+    /// <summary>
+    /// Remove an outbound handler
+    /// </summary>
+    bool removeOutbound(const QString& tag);
+
 signals:
     /// <summary>
     /// Log output signal
@@ -167,6 +206,7 @@ private:
     CoreStatus m_status = CoreStatus::Stopped;  // Current status
     QString m_coreExePath;                   // Core executable path
     QString m_currentConfigFile;             // Current config file
+    QString m_xrayApiPath;                   // xray-api executable path
     QFile m_logFile;                         // Log file
     bool m_displayLog = true;                // Whether to display log
 };

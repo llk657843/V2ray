@@ -1,4 +1,5 @@
 #include "v2raycpp.h"
+#include <QMouseEvent>
 #include "TrayIcon.h"
 #include "TrojanFmt.h"
 #include <QFileDialog>
@@ -25,18 +26,9 @@
 #include <QDialogButtonBox>
 
 v2raycpp::v2raycpp(QWidget *parent)
-    : QMainWindow(parent)
+    : QWidget(parent)
 {
-    // Debug log
-    {
-        QFile logFile("E:/v2raycpp/V2ray/x64/Debug/debug.log");
-        if (logFile.open(QIODevice::WriteOnly | QIODevice::Append | QIODevice::Text)) {
-            QTextStream stream(&logFile);
-            stream << "=== v2raycpp constructor ===" << Qt::endl;
-            logFile.close();
-        }
-    }
-
+    setWindowFlags(Qt::FramelessWindowHint);
     ui.setupUi(this);
     
     // Initialize core manager
@@ -178,7 +170,13 @@ void v2raycpp::initUI()
     {
         connect(ui.btnSettings, &QPushButton::clicked, this, &v2raycpp::onSettingsClicked);
     }
-    if (ui.btnDisconnect)
+        // Close button
+    if (ui.btnClose)
+    {
+        connect(ui.btnClose, &QPushButton::clicked, this, &v2raycpp::onCloseClicked);
+    }
+
+if (ui.btnDisconnect)
     {
         connect(ui.btnDisconnect, &QPushButton::clicked, this, &v2raycpp::onStopClicked);
     }
@@ -1489,4 +1487,37 @@ void v2raycpp::onReconnectTimeout()
     
     // Restart the connection
     onStartClicked();
+}
+
+
+// Close button handler
+void v2raycpp::onCloseClicked()
+{
+    close();
+}
+
+// Mouse drag functionality for frameless window
+void v2raycpp::mousePressEvent(QMouseEvent *event)
+{
+    if (event->pos().y() < 40)
+    {
+        // Top 40 pixels - start dragging
+        m_dragging = true;
+        m_dragPosition = event->globalPosition().toPoint() - frameGeometry().topLeft();
+        event->accept();
+    }
+}
+
+void v2raycpp::mouseMoveEvent(QMouseEvent *event)
+{
+    if (m_dragging)
+    {
+        move(event->globalPosition().toPoint() - m_dragPosition);
+        event->accept();
+    }
+}
+
+void v2raycpp::mouseReleaseEvent(QMouseEvent *event)
+{
+    m_dragging = false;
 }
