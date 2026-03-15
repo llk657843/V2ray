@@ -96,15 +96,21 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <QtMoc Include="ServerGridWidget.h" />
+    <QtMoc Include="ServerCardWidget.h" />
     <QtMoc Include="include\XrayApiClient.h" />
     <None Include="style.qss">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <ClInclude Include="include\ServerGridWidget.h" />
     <ClInclude Include="include\V2rayConfig.h" />
     <QtRcc Include="v2raycpp.qrc" />
     <QtUic Include="v2raycpp.ui" />
     <QtMoc Include="v2raycpp.h" />
+    <ClCompile Include="ServerGridWidget.cpp" />
     <ClCompile Include="src\CoreManager.cpp" />
+    <ClCompile Include="ServerCardWidget.cpp" />
+    <ClCompile Include="SimpleCard.cpp" />
     <ClCompile Include="src\Logger.cpp" />
     <ClCompile Include="src\TrayIcon.cpp" />
     <ClCompile Include="v2raycpp.cpp" />

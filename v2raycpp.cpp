@@ -1,4 +1,4 @@
-#include "v2raycpp.h"
+﻿#include "v2raycpp.h"
 #include <QMouseEvent>
 #include "TrayIcon.h"
 #include "TrojanFmt.h"
@@ -24,12 +24,44 @@
 #include <QLabel>
 #include <QLineEdit>
 #include <QDialogButtonBox>
+#include <QFrame>
+#include <QGridLayout>
+
+#include "SimpleCard.h"
 
 v2raycpp::v2raycpp(QWidget *parent)
     : QWidget(parent)
 {
+    m_dragging = false;
+    m_dragPosition = QPoint();
+    
     setWindowFlags(Qt::FramelessWindowHint);
+    
+    // Load window position from config
+    {
+        QFile file("E:/v2raycpp/V2ray/window_pos.json");
+        if (file.open(QIODevice::ReadOnly)) {
+            QJsonDocument doc = QJsonDocument::fromJson(file.readAll());
+            if (doc.isObject()) {
+                QJsonObject obj = doc.object();
+                int x = obj["x"].toInt(-1);
+                int y = obj["y"].toInt(-1);
+                int w = obj["width"].toInt(-1);
+                int h = obj["height"].toInt(-1);
+                if (x >= 0 && y >= 0 && w > 0 && h > 0) {
+                    setGeometry(x, y, w, h);
+                }
+            }
+            file.close();
+        }
+    }
+    
     ui.setupUi(this);
+    
+    // Set sidebar fixed width to 256px per Figma design
+    if (ui.sidebarLayout && ui.sidebarLayout->parentWidget()) {
+        ui.sidebarLayout->parentWidget()->setMinimumWidth(256);
+    }
     
     // Initialize core manager
     m_coreManager = std::make_unique<CoreManager>();
@@ -45,6 +77,7 @@ v2raycpp::v2raycpp(QWidget *parent)
     // Initialize UI
     loadStyleSheet();
     initUI();
+    initServerGrid(); // 鍒濆鍖栧崱鐗囩綉鏍?
     
     // Initialize connections
     initConnections();
@@ -90,11 +123,54 @@ v2raycpp::~v2raycpp()
     }
 }
 
+void v2raycpp::mousePressEvent(QMouseEvent* event)
+{
+}
+
+void v2raycpp::mouseMoveEvent(QMouseEvent* event)
+{
+}
+
+void v2raycpp::mouseReleaseEvent(QMouseEvent* event)
+{
+}
+
+void v2raycpp::closeEvent(QCloseEvent* event)
+{
+}
+
+void v2raycpp::initServerGrid()
+{
+    // Create ServerGridWidget - serverList not in new UI
+    m_serverGrid = new ServerGridWidget(this);
+    m_serverGrid->setObjectName("serverGrid");
+    
+    // Connect grid signals
+    connect(m_serverGrid, &ServerGridWidget::serverClicked, this, [this](int index) {
+        if (index >= 0 && index < (int)m_serverProfiles.size()) {
+            // Select and optionally connect
+        }
+    });
+    
+    connect(m_serverGrid, &ServerGridWidget::serverToggled, this, [this](int index, bool connected) {
+        if (index >= 0 && index < (int)m_serverProfiles.size()) {
+            if (connected) {
+                m_currentProfile = m_serverProfiles[index];
+                onStartClicked();
+            } else {
+                onStopClicked();
+            }
+        }
+    });
+}
+
 void v2raycpp::loadStyleSheet()
 {
-    QFile styleFile("style.qss");
+    // Load style sheet from application directory
+    QString styleFilePath = QCoreApplication::applicationDirPath() + "/style.qss";
+    QFile styleFile(styleFilePath);
     if (!styleFile.open(QFile::ReadOnly | QFile::Text)) {
-        qWarning() << "Failed to open style.qss:" << styleFile.errorString();
+        qWarning() << "Failed to open style.qss:" << styleFile.errorString() << "Path:" << styleFilePath;
         return;
     }
     QTextStream stream(&styleFile);
@@ -113,78 +189,40 @@ void v2raycpp::initUI()
     // Set window title
     setWindowTitle("v2raycpp");
     
-    // Connect double click signal for server list
-    connect(ui.serverList, &QListWidget::doubleClicked, 
-            this, &v2raycpp::onServerDoubleClicked);
-
-    // Connect server selection changed signal for details panel
-    connect(ui.serverList, &QListWidget::currentRowChanged,
-            this, &v2raycpp::onServerSelected);
-
-    // Connect Delete key for deleting selected server
-    ui.serverList->setSelectionMode(QAbstractItemView::SingleSelection);
-    ui.serverList->setContextMenuPolicy(Qt::CustomContextMenu);
+    // Set sidebar button texts to English
+    if (ui.navHome) ui.navHome->setText("Home");
+    if (ui.navServers) ui.navServers->setText("Servers");
+    if (ui.navSettings) ui.navSettings->setText("Settings");
     
-    QShortcut* deleteShortcut = new QShortcut(QKeySequence::Delete, this);
-    connect(deleteShortcut, &QShortcut::activated, this, &v2raycpp::onDeleteServerClicked);
-    
-    // Connect Enter key for editing selected server
-    QShortcut* enterShortcut = new QShortcut(Qt::Key_Return, this);
-    connect(enterShortcut, &QShortcut::activated, this, &v2raycpp::onEditServerClicked);    
-    // Connect toolbar actions
-    if (ui.actionStart)
+        // Server grid is created in initServerGrid()\n    // Old serverList not used\n    \n    // Connect new UI buttons
+    if (ui.btnStartProxy)
     {
-        connect(ui.actionStart, &QAction::triggered, this, &v2raycpp::onStartClicked);
+        connect(ui.btnStartProxy, &QPushButton::clicked, this, &v2raycpp::onStartClicked);
     }
-    if (ui.actionStop)
+    if (ui.toolAdd)
     {
-        connect(ui.actionStop, &QAction::triggered, this, &v2raycpp::onStopClicked);
+        connect(ui.toolAdd, &QPushButton::clicked, this, &v2raycpp::onAddServerClicked);
     }
-    if (ui.actionImport)
+    if (ui.toolDl)
     {
-        connect(ui.actionImport, &QAction::triggered, this, &v2raycpp::onImportClicked);
+        connect(ui.toolDl, &QPushButton::clicked, this, &v2raycpp::onImportClicked);
     }
-    if (ui.actionAdd)
+    if (ui.navSettings)
     {
-        connect(ui.actionAdd, &QAction::triggered, this, &v2raycpp::onAddServerClicked);
-    }
-    if (ui.actionSettings)
-    {
-        connect(ui.actionSettings, &QAction::triggered, this, &v2raycpp::onSettingsClicked);
-    }
-    
-    // Connect new UI buttons
-    if (ui.startProxyBtn)
-    {
-        connect(ui.startProxyBtn, &QPushButton::clicked, this, &v2raycpp::onStartClicked);
-    }
-    if (ui.btnAdd)
-    {
-        connect(ui.btnAdd, &QPushButton::clicked, this, &v2raycpp::onAddServerClicked);
-    }
-    if (ui.btnImport)
-    {
-        connect(ui.btnImport, &QPushButton::clicked, this, &v2raycpp::onImportClicked);
-    }
-    if (ui.btnSettings)
-    {
-        connect(ui.btnSettings, &QPushButton::clicked, this, &v2raycpp::onSettingsClicked);
-    }
-        // Close button
-    if (ui.btnClose)
-    {
-        connect(ui.btnClose, &QPushButton::clicked, this, &v2raycpp::onCloseClicked);
+        connect(ui.navSettings, &QPushButton::clicked, this, &v2raycpp::onSettingsClicked);
     }
 
-if (ui.btnDisconnect)
+    // btnClose not in new UI
+
+    if (ui.btnDisconnect)
     {
         connect(ui.btnDisconnect, &QPushButton::clicked, this, &v2raycpp::onStopClicked);
     }
 
     // Connect search box
-    if (ui.searchBox)
+    if (ui.searchBar)
     {
-        connect(ui.searchBox, &QLineEdit::textChanged, this, &v2raycpp::onSearchTextChanged);
+        connect(ui.searchBar, &QLineEdit::textChanged, this, &v2raycpp::onSearchTextChanged);
     }
 }
 
@@ -240,56 +278,46 @@ void v2raycpp::updateUIStatus()
     }
     
     // Update status bar
-    if (ui.statusLabel)
+    if (ui.statConnLabel)
     {
-        ui.statusLabel->setText(statusText);
+        ui.statConnLabel->setText(statusText);
     }
     
     // Update startProxyBtn text
-    if (ui.startProxyBtn)
+    if (ui.btnStartProxy)
     {
         if (m_currentStatus == CoreStatus::Running)
         {
-            ui.startProxyBtn->setText("Stop");
+            ui.btnStartProxy->setText("Stop");
         }
         else
         {
-            ui.startProxyBtn->setText("Start");
+            ui.btnStartProxy->setText("Start");
         }
     }
     
     // Update speed labels to show 0 when stopped
     if (m_currentStatus == CoreStatus::Stopped)
     {
-        if (ui.downloadSpeedLabel)
+        if (ui.statSpeedDown)
         {
-            ui.downloadSpeedLabel->setText("0 KB/s");
+            ui.statSpeedDown->setText("0 KB/s");
         }
-        if (ui.uploadSpeedLabel)
+        if (ui.statSpeedUp)
         {
-            ui.uploadSpeedLabel->setText("0 KB/s");
+            ui.statSpeedUp->setText("0 KB/s");
         }
-        if (ui.ipLabel)
+        if (ui.statIP)
         {
-            ui.ipLabel->setText("IP: --");
+            ui.statIP->setText("IP: --");
         }
-    }
-    
-    // Update toolbar actions enabled state
-    if (ui.actionStart)
-    {
-        ui.actionStart->setEnabled(m_currentStatus != CoreStatus::Running);
-    }
-    if (ui.actionStop)
-    {
-        ui.actionStop->setEnabled(m_currentStatus == CoreStatus::Running);
     }
 }
 
 void v2raycpp::updateStatusBar()
 {
     // Update current node label
-    if (ui.statusLabel)
+    if (ui.statConnLabel)
     {
         if (m_currentProfile.isValid())
         {
@@ -298,24 +326,24 @@ void v2raycpp::updateStatusBar()
                       m_currentProfile.getAddress() : m_currentProfile.getRemark()))
                 .arg(QString::fromStdString(m_currentProfile.getAddress()))
                 .arg(m_currentProfile.getPort());
-            ui.statusLabel->setText(nodeInfo);
+            ui.statConnLabel->setText(nodeInfo);
         }
         else
         {
-            ui.statusLabel->setText("No Server");
+            ui.statConnLabel->setText("No Server");
         }
     }
     
     // Update start time label
-    if (ui.startTimeLabel)
+    if (ui.statUptime)
     {
         if (m_currentStatus == CoreStatus::Running && m_startTime.isValid())
         {
-            ui.startTimeLabel->setText("Connected: " + m_startTime.toString("HH:mm:ss"));
+            ui.statUptime->setText("Connected: " + m_startTime.toString("HH:mm:ss"));
         }
         else
         {
-            ui.startTimeLabel->setText("Connected: --");
+            ui.statUptime->setText("Connected: --");
         }
     }
 }
@@ -618,17 +646,13 @@ void v2raycpp::onStartClicked()
     if (!m_currentProfile.isValid())
     {
         // Try to get selected profile from list
-        int currentRow = ui.serverList->currentRow();
-        if (currentRow >= 0 && currentRow < (int)m_serverProfiles.size())
-        {
-            m_currentProfile = m_serverProfiles[currentRow];
-        }
-        else
-        {
-            QMessageBox::warning(this, "Warning", "Please select a server");
-            return;
-        }
+        // Get from grid - TODO
     }
+    if (m_serverProfiles.empty()) {
+        QMessageBox::warning(this, "Warning", "Please add a server first");
+        return;
+    }
+    m_currentProfile = m_serverProfiles[0];
     
     // Generate core config
     if (!generateCoreConfig(m_currentProfile))
@@ -671,26 +695,24 @@ void v2raycpp::onStopClicked()
         QMessageBox::information(this, "Info", "Already stopped");
         return;
     }
-    
-    // Stop core
+
+    // 停止核心
     if (m_coreManager->stopCore())
     {
-        // Stop traffic statistics timer
+        // 停止流量统计计时器
         stopStatsTimer();
-        
-        // Stop auto reconnect timer (user manually stopped)
+
+        // 停止自动重连计时器（用户手动停止）
         stopReconnectTimer();
-        
-        // Clear system proxy
+
+        // 清除系统代理
         m_sysProxyHandler->clearProxy();
-        
-        // Reset start time
+
+        // 重置启动时间
         m_startTime = QDateTime();
-        
-        // Update UI
+
+        // 更新状态栏
         updateStatusBar();
-        
-        // statusBar()->showMessage() removed - using statusLabel instead
     }
     else
     {
@@ -703,32 +725,35 @@ void v2raycpp::onImportClicked()
     // Get text from clipboard
     QClipboard* clipboard = QApplication::clipboard();
     QString text = clipboard->text();
-    
+
     if (text.isEmpty())
     {
         QMessageBox::warning(this, "Warning", "Clipboard is empty");
         return;
     }
-    
+
     // Try to parse the URL
     ProfileItem profile;
     if (parseProfileFromUrl(text, profile))
     {
         // Add to list
         m_serverProfiles.push_back(profile);
-        
-        // Add to UI
+
+        // Add to UI (grid)
         addServerToList(profile);
-        
+
         // Set as current profile
         m_currentProfile = profile;
-        
+
         // Update status bar
         updateStatusBar();
-        
-        // Select the new item
-        ui.serverList->setCurrentRow(ui.serverList->count() - 1);
-        
+
+        // 如果使用新的 grid，可以选中最后一个项（占位）
+        if (m_serverGrid) {
+            // TODO: 如果 ServerGridWidget 支持选择，调用相应方法选中最后一个项
+            // e.g. m_serverGrid->selectIndex(static_cast<int>(m_serverProfiles.size()) - 1);
+        }
+
         // statusBar()->showMessage() removed - using statusLabel instead
     }
     else
@@ -799,8 +824,8 @@ void v2raycpp::onAddServerClicked()
             
             m_currentProfile = profile;
             updateStatusBar();
-            
-            ui.serverList->setCurrentRow(ui.serverList->count() - 1);
+            //TODO:Fixit
+            //ui.serverList->setCurrentRow(ui.serverList->count() - 1);
             
             // statusBar()->showMessage() removed - using statusLabel instead
         }
@@ -820,248 +845,29 @@ void v2raycpp::onSettingsClicked()
 
 void v2raycpp::onDeleteServerClicked()
 {
-    int currentRow = ui.serverList->currentRow();
-    
-    if (currentRow < 0)
-    {
-        QMessageBox::warning(this, "Warning", "Please select a server to delete");
-        return;
-    }
-    
-    // Get the profile being deleted
-    ProfileItem deletedProfile = m_serverProfiles[currentRow];
-    
-    // Check if this is the currently connected profile
-    bool isCurrentlyConnected = (m_currentProfile.isValid() && 
-        m_currentProfile.getAddress() == deletedProfile.getAddress() &&
-        m_currentProfile.getPort() == deletedProfile.getPort());
-    
-    // If connected, disconnect first
-    if (isCurrentlyConnected && m_currentStatus == CoreStatus::Running)
-    {
-        onStopClicked();
-        m_currentProfile = ProfileItem();
-    }
-    
-    // Remove from vector
-    m_serverProfiles.erase(m_serverProfiles.begin() + currentRow);
-    
-    // Remove from list widget
-    delete ui.serverList->takeItem(currentRow);
-    
-    // Save configuration after deletion
-    saveConfig();
-    
-    // If we deleted the current profile, clear it
-    if (isCurrentlyConnected)
-    {
-        m_currentProfile = ProfileItem();
-        updateStatusBar();
-    }
+    // TODO: implement with grid
+    QMessageBox::information(this, "Info", "Use grid to select server");
 }
+
 
 void v2raycpp::onEditServerClicked()
 {
-    int currentRow = ui.serverList->currentRow();
-    
-    if (currentRow < 0)
-    {
-        QMessageBox::warning(this, "Warning", "Please select a server to edit");
-        return;
-    }
-    
-    // Get the current profile
-    ProfileItem& profile = m_serverProfiles[currentRow];
-    
-    // Create edit dialog
-    QDialog dialog(this);
-    dialog.setWindowTitle("Edit Server");
-    dialog.setMinimumWidth(400);
-    
-    QVBoxLayout* layout = new QVBoxLayout(&dialog);
-    
-    // Remark
-    QLabel* remarkLabel = new QLabel("Remark:", &dialog);
-    QLineEdit* remarkEdit = new QLineEdit(&dialog);
-    remarkEdit->setText(QString::fromStdString(profile.getRemark()));
-    layout->addWidget(remarkLabel);
-    layout->addWidget(remarkEdit);
-    
-    // Address
-    QLabel* addressLabel = new QLabel("Address:", &dialog);
-    QLineEdit* addressEdit = new QLineEdit(&dialog);
-    addressEdit->setText(QString::fromStdString(profile.getAddress()));
-    layout->addWidget(addressLabel);
-    layout->addWidget(addressEdit);
-    
-    // Port
-    QLabel* portLabel = new QLabel("Port:", &dialog);
-    QLineEdit* portEdit = new QLineEdit(&dialog);
-    portEdit->setText(QString::number(profile.getPort()));
-    layout->addWidget(portLabel);
-    layout->addWidget(portEdit);
-    
-    // Password
-    QLabel* passwordLabel = new QLabel("Password:", &dialog);
-    QLineEdit* passwordEdit = new QLineEdit(&dialog);
-    passwordEdit->setText(QString::fromStdString(profile.getPassword()));
-    passwordEdit->setEchoMode(QLineEdit::Password);
-    layout->addWidget(passwordLabel);
-    layout->addWidget(passwordEdit);
-    
-    // SNI
-    QLabel* sniLabel = new QLabel("SNI (Optional):", &dialog);
-    QLineEdit* sniEdit = new QLineEdit(&dialog);
-    sniEdit->setText(QString::fromStdString(profile.getSni()));
-    layout->addWidget(sniLabel);
-    layout->addWidget(sniEdit);
-    
-    // Network
-    QLabel* networkLabel = new QLabel("Network (tcp/ws):", &dialog);
-    QLineEdit* networkEdit = new QLineEdit(&dialog);
-    networkEdit->setText(QString::fromStdString(profile.getNetwork()));
-    layout->addWidget(networkLabel);
-    layout->addWidget(networkEdit);
-    
-    // Security
-    QLabel* securityLabel = new QLabel("Security (tls/none):", &dialog);
-    QLineEdit* securityEdit = new QLineEdit(&dialog);
-    securityEdit->setText(QString::fromStdString(profile.getSecurity()));
-    layout->addWidget(securityLabel);
-    layout->addWidget(securityEdit);
-    
-    // Buttons
-    QDialogButtonBox* buttons = new QDialogButtonBox(
-        QDialogButtonBox::Ok | QDialogButtonBox::Cancel,
-        &dialog);
-    layout->addWidget(buttons);
-    
-    connect(buttons, &QDialogButtonBox::accepted, &dialog, &QDialog::accept);
-    connect(buttons, &QDialogButtonBox::rejected, &dialog, &QDialog::reject);
-    
-    if (dialog.exec() == QDialog::Accepted)
-    {
-        // Update profile with new values
-        profile.setRemark(remarkEdit->text().toStdString());
-        profile.setAddress(addressEdit->text().toStdString());
-        profile.setPort(portEdit->text().toInt());
-        profile.setPassword(passwordEdit->text().toStdString());
-        profile.setSni(sniEdit->text().toStdString());
-        profile.setNetwork(networkEdit->text().toStdString());
-        profile.setSecurity(securityEdit->text().toStdString());
-        
-        // Update current profile if it's the one being edited
-        if (m_currentProfile.isValid() && 
-            m_currentProfile.getAddress() == profile.getAddress() &&
-            m_currentProfile.getPort() == profile.getPort())
-        {
-            m_currentProfile = profile;
-        }
-        
-        // Update the list item text
-        QString itemText = QString("%1 - %2:%3")
-            .arg(QString::fromStdString(profile.getRemark().empty() ? 
-                  profile.getAddress() : profile.getRemark()))
-            .arg(QString::fromStdString(profile.getAddress()))
-            .arg(profile.getPort());
-        ui.serverList->item(currentRow)->setText(itemText);
-        
-        // Save configuration
-        saveConfig();
-        
-        // Update status bar
-        updateStatusBar();
-    }
+    // TODO: implement with grid
+    QMessageBox::information(this, "Info", "Use grid to select server");
 }
 
-void v2raycpp::onCustomContextMenu(const QPoint& pos)
-{
-    // Get the item at the cursor position
-    QListWidgetItem* item = ui.serverList->itemAt(pos);
-    
-    if (!item) return;
-    
-    // Create context menu
-    QMenu menu(this);
-    
-    // Add menu actions
-    QAction* startAction = menu.addAction("Start");
-    QAction* editAction = menu.addAction("Edit");
-    QAction* deleteAction = menu.addAction("Delete");
-    QAction* latencyAction = menu.addAction("Test Latency");
-    
-    // Show menu at cursor position
-    QAction* selectedAction = menu.exec(ui.serverList->mapToGlobal(pos));
-    
-    if (selectedAction == startAction) {
-        onStartClicked();
-    } else if (selectedAction == editAction) {
-        onEditServerClicked();
-    } else if (selectedAction == deleteAction) {
-        onDeleteServerClicked();
-    } else if (selectedAction == latencyAction) {
-        onRefreshLatencyClicked();
-    }
-}
 
-void v2raycpp::onServerDoubleClicked(const QModelIndex& index)
-{
-    int currentRow = index.row();
-    if (currentRow >= 0 && currentRow < (int)m_serverProfiles.size())
-    {
-        // Set as current profile
-        m_currentProfile = m_serverProfiles[currentRow];
-        
-        // Update status bar
-        updateStatusBar();
-        
-        // Start proxy
-        onStartClicked();
-    }
-}
+// onCustomContextMenu removed
+void v2raycpp::onCustomContextMenu(const QPoint&) { }
 
-void v2raycpp::onServerSelected(int currentRow)
-{
-    if (currentRow >= 0 && currentRow < (int)m_serverProfiles.size())
-    {
-        // Get selected profile
-        const ProfileItem& profile = m_serverProfiles[currentRow];
-        
-        // Build detailed info string
-        QString remark = QString::fromStdString(profile.getRemark().empty() ?
-                            profile.getAddress() : profile.getRemark());
-        QString address = QString::fromStdString(profile.getAddress());
-        int port = profile.getPort();
-        QString configType = QString::fromStdString(profile.getConfigTypeString());
-        int latency = profile.getLatency();
-        
-        // Build detail string
-        QString latencyStr = (latency >= 0) ? QString("%1 ms").arg(latency) : "--";
-        QString statusStr = (m_currentStatus == CoreStatus::Running) ? "Running" : "Stopped";
-        
-        QString detailInfo = QString("%1 | %2:%3 | %4 | Latency: %5 | Status: %6")
-            .arg(remark)
-            .arg(address)
-            .arg(port)
-            .arg(configType)
-            .arg(latencyStr)
-            .arg(statusStr);
-        
-        // Update status label with detailed info
-        if (ui.statusLabel)
-        {
-            ui.statusLabel->setText(detailInfo);
-        }
-    }
-    else
-    {
-        // No valid selection
-        if (ui.statusLabel)
-        {
-            ui.statusLabel->setText("No Server Selected");
-        }
-    }
-}
+
+// onServerDoubleClicked removed
+void v2raycpp::onServerDoubleClicked() { }
+
+
+// onServerSelected removed  
+void v2raycpp::onServerSelected(int) { }
+
 
 void v2raycpp::onLogOutput(const QString& log)
 {
@@ -1233,43 +1039,43 @@ void v2raycpp::onRefreshLatencyClicked()
     for (int i = 0; i < m_serverProfiles.size(); ++i)
     {
         ProfileItem& profile = m_serverProfiles[i];
-        
+
         // Test TCP connection latency
         QElapsedTimer timer;
         timer.start();
-        
+
         QTcpSocket socket;
         socket.connectToHost(QString::fromStdString(profile.getAddress()), profile.getPort());
-        
+
         if (socket.waitForConnected(3000)) {
             int latency = timer.elapsed();
             profile.setLatency(latency);
-        } else {
+        }
+        else {
             profile.setLatency(-1);  // Failed to connect
         }
-        
+
         // Update the list item text with latency
         QString latencyStr;
         if (profile.getLatency() > 0) {
             latencyStr = QString::number(profile.getLatency()) + "ms";
-        } else {
+        }
+        else {
             latencyStr = "--";
         }
-        
+
         QString itemText = QString("%1 - %2:%3 - %4")
             .arg(QString::fromStdString(profile.getRemark().empty() ?
-                  profile.getAddress() : profile.getRemark()))
+                profile.getAddress() : profile.getRemark()))
             .arg(QString::fromStdString(profile.getAddress()))
             .arg(profile.getPort())
             .arg(latencyStr);
-        
-        if (i < ui.serverList->count()) {
-            ui.serverList->item(i)->setText(itemText);
-        }
-        
-        // Small delay between tests to avoid overwhelming
-        QThread::msleep(100);
+
+        // Grid update handled elsewhere
     }
+
+    // Small delay between tests to avoid overwhelming
+    QThread::msleep(100);
 }
 
 // ==================== Helper Functions ====================
@@ -1282,18 +1088,50 @@ void v2raycpp::addServerToList(const ProfileItem& profile)
         .arg(QString::fromStdString(profile.getAddress()))
         .arg(profile.getPort());
     
-    ui.serverList->addItem(itemText);
-}
+    // serverList removed - using grid only
+    // Also add to new card-style grid
+            // Get protocol string from config type
+    QString protocol;
+    if (m_serverGrid) {
+        QString name = QString::fromStdString(profile.getRemark().empty() ? 
+                       profile.getAddress() : profile.getRemark());
+        
+
+        switch (profile.getConfigType()) {
+            case EConfigType::VMess: protocol = "VMess"; break;
+            case EConfigType::VLESS: protocol = "VLESS"; break;
+            case EConfigType::Trojan: protocol = "Trojan"; break;
+            case EConfigType::Shadowsocks: protocol = "Shadowsocks"; break;
+            case EConfigType::Socks: protocol = "Socks"; break;
+            case EConfigType::Http: protocol = "HTTP"; break;
+            case EConfigType::Hysteria2: protocol = "Hysteria2"; break;
+            case EConfigType::Tuic: protocol = "TUIC"; break;
+            default: protocol = "Unknown"; break;
+        }
+        
+        QString flagPath = ""; // TODO: Add flag based on country
+        int latency = -1; // TODO: Test latency
+        bool isConnected = (m_currentStatus == CoreStatus::Running && 
+                          profile.getAddress() == m_currentProfile.getAddress());
+        m_serverGrid->addServer(name, latency, protocol, flagPath, isConnected);
+    }
+    
+    // 同时将卡片添加到主 UI 的 gridLayout（若存在）
+    if (ui.gridLayout)
+    {
+        // 标题使用备注或地址+端口
+        QString label = QString::fromStdString(profile.getRemark().empty() ?
+                                               profile.getAddress() : profile.getRemark());
+        addCardToGrid(label, protocol);
+    }
+ }
 
 ProfileItem v2raycpp::getSelectedProfile() const
 {
-    int currentRow = ui.serverList->currentRow();
-    if (currentRow >= 0 && currentRow < (int)m_serverProfiles.size())
-    {
-        return m_serverProfiles[currentRow];
-    }
+    if (m_serverProfiles.size() > 0) return m_serverProfiles[0];
     return ProfileItem();
 }
+
 
 bool v2raycpp::parseProfileFromUrl(const QString& url, ProfileItem& profile)
 {
@@ -1357,13 +1195,13 @@ void v2raycpp::stopStatsTimer()
     }
     
     // Reset display
-    if (ui.downloadSpeedLabel)
+    if (ui.statSpeedDown)
     {
-        ui.downloadSpeedLabel->setText("0 KB/s");
+        ui.statSpeedDown->setText("0 KB/s");
     }
-    if (ui.uploadSpeedLabel)
+    if (ui.statSpeedUp)
     {
-        ui.uploadSpeedLabel->setText("0 KB/s");
+        ui.statSpeedUp->setText("0 KB/s");
     }
 }
 
@@ -1386,45 +1224,52 @@ void v2raycpp::updateStats()
     QString downloadStr;
     if (downloadSpeed >= 1024 * 1024)
     {
-        downloadStr = QString("�?%1 MB/s").arg(downloadSpeed / (1024.0 * 1024.0), 0, 'f', 1);
+        downloadStr = QString("%1 MB/s").arg(downloadSpeed / (1024.0 * 1024.0), 0, 'f', 1);
     }
     else
     {
-        downloadStr = QString("�?%1 KB/s").arg(downloadSpeed / 1024.0, 0, 'f', 1);
+        downloadStr = QString("%1 KB/s").arg(downloadSpeed / 1024.0, 0, 'f', 1);
     }
     
     // Format upload speed
     QString uploadStr;
     if (uploadSpeed >= 1024 * 1024)
     {
-        uploadStr = QString("�?%1 MB/s").arg(uploadSpeed / (1024.0 * 1024.0), 0, 'f', 1);
+        uploadStr = QString("%1 MB/s").arg(uploadSpeed / (1024.0 * 1024.0), 0, 'f', 1);
     }
     else
     {
-        uploadStr = QString("�?%1 KB/s").arg(uploadSpeed / 1024.0, 0, 'f', 1);
+        uploadStr = QString("%1 KB/s").arg(uploadSpeed / 1024.0, 0, 'f', 1);
     }
     
     // Update UI labels
-    if (ui.downloadSpeedLabel)
+    if (ui.statSpeedDown)
     {
-        ui.downloadSpeedLabel->setText(downloadStr);
+        ui.statSpeedDown->setText(downloadStr);
     }
-    if (ui.uploadSpeedLabel)
+    if (ui.statSpeedUp)
     {
-        ui.uploadSpeedLabel->setText(uploadStr);
+        ui.statSpeedUp->setText(uploadStr);
     }
 }
 
+void v2raycpp::startReconnectTimer()
+{
+}
 
+void v2raycpp::stopReconnectTimer()
+{
+}
 
-
-
+void v2raycpp::onReconnectTimeout()
+{
+}
 
 void v2raycpp::onSearchTextChanged(const QString& text)
 {
     QString searchText = text.trimmed().toLower();
-    
-    for (int i = 0; i < ui.serverList->count(); ++i)
+    //TODO:Fixit
+    /*for (int i = 0; i < ui.serverList->count(); ++i)
     {
         QListWidgetItem* item = ui.serverList->item(i);
         if (item)
@@ -1433,91 +1278,63 @@ void v2raycpp::onSearchTextChanged(const QString& text)
             bool match = searchText.isEmpty() || itemText.contains(searchText);
             item->setHidden(!match);
         }
-    }
+    }*/
 }
 
-// ==================== Auto Reconnect ====================
-
-void v2raycpp::startReconnectTimer()
+// 将一个卡片插入到 designer 的 gridLayout 中。
+// 插入策略：如果能找到 ui.cardAddNode，则在其位置放入新卡片，并把 cardAddNode 推到下一个格子；
+// 否则按当前 count 计算位置追加。
+void v2raycpp::addCardToGrid(const QString &title, const QString &subText)
 {
-    // Stop existing timer if any
-    stopReconnectTimer();
-    
-    // Create timer if not exists
-    if (!m_reconnectTimer)
+    if (!ui.gridLayout) return;
+
+    // 创建卡片并设置样式文本
+    SimpleCard *card = new SimpleCard(this);
+    card->setTitle(title);
+    card->setSubText(subText);
+    card->setIconText("\342\236\225"); // 使用与 designer 中相同的符号作为占位图标
+
+    QGridLayout *g = ui.gridLayout;
+    const int columns = 2; // 与 ui 设计保持 2 列
+
+    // 尝试找到 cardAddNode 在 layout 中的位置
+    int addNodeIndex = -1;
+    for (int i = 0; i < g->count(); ++i)
     {
-        m_reconnectTimer = new QTimer(this);
-        connect(m_reconnectTimer, &QTimer::timeout, this, &v2raycpp::onReconnectTimeout);
+        QLayoutItem *item = g->itemAt(i);
+        if (!item) continue;
+        QWidget *w = item->widget();
+        if (w == ui.cardAddNode) { addNodeIndex = i; break; }
     }
-    
-    // Start timer with 3 second delay
-    qDebug() << "Starting auto reconnect timer...";
-    m_reconnectTimer->start(3000);
-}
 
-void v2raycpp::stopReconnectTimer()
-{
-    if (m_reconnectTimer)
+    if (addNodeIndex != -1)
     {
-        m_reconnectTimer->stop();
-        qDebug() << "Stopped auto reconnect timer";
-    }
-}
+        int r, c, rs, cs;
+        g->getItemPosition(addNodeIndex, &r, &c, &rs, &cs);
 
-void v2raycpp::onReconnectTimeout()
-{
-    qDebug() << "Auto reconnect timeout, restarting...";
-    
-    // Stop the timer
-    stopReconnectTimer();
-    
-    // Check if we have a valid profile
-    if (!m_currentProfile.isValid())
+        // 放置新卡片在 cardAddNode 的原位置
+        g->addWidget(card, r, c);
+
+        // 将 cardAddNode 移动到下一个格子
+        int newR = r;
+        int newC = c + 1;
+        if (newC >= columns) { newC = 0; newR = r + 1; }
+        g->removeWidget(ui.cardAddNode);
+        g->addWidget(ui.cardAddNode, newR, newC);
+    }
+    else
     {
-        qDebug() << "No valid profile for reconnect";
-        return;
+        // 退化：按当前 count 追加
+        int idx = g->count();
+        int r = idx / columns;
+        int c = idx % columns;
+        g->addWidget(card, r, c);
     }
-    
-    // Check if already running (might have been restarted)
-    if (m_currentStatus == CoreStatus::Running)
-    {
-        qDebug() << "Already running, skipping reconnect";
-        return;
-    }
-    
-    // Restart the connection
-    onStartClicked();
+
+    // 如果需要，可为 card 添加鼠标事件或点击逻辑（此处保持简单）
 }
 
 
-// Close button handler
-void v2raycpp::onCloseClicked()
-{
-    close();
-}
 
-// Mouse drag functionality for frameless window
-void v2raycpp::mousePressEvent(QMouseEvent *event)
-{
-    if (event->pos().y() < 40)
-    {
-        // Top 40 pixels - start dragging
-        m_dragging = true;
-        m_dragPosition = event->globalPosition().toPoint() - frameGeometry().topLeft();
-        event->accept();
-    }
-}
 
-void v2raycpp::mouseMoveEvent(QMouseEvent *event)
-{
-    if (m_dragging)
-    {
-        move(event->globalPosition().toPoint() - m_dragPosition);
-        event->accept();
-    }
-}
 
-void v2raycpp::mouseReleaseEvent(QMouseEvent *event)
-{
-    m_dragging = false;
-}

@@ -14,6 +14,7 @@
 #include "AppConfig.h"
 #include "ProfileItem.h"
 #include "TrayIcon.h"
+#include "ServerGridWidget.h"
 
 class v2raycpp : public QWidget
 {
@@ -27,15 +28,16 @@ protected:
     void mousePressEvent(QMouseEvent *event) override;
     void mouseMoveEvent(QMouseEvent *event) override;
     void mouseReleaseEvent(QMouseEvent *event) override;
+    void closeEvent(QCloseEvent *event) override;
 
 private slots:
-    void onCloseClicked();
+    //void onCloseClicked();
     void onStartClicked();
     void onStopClicked();
     void onImportClicked();
     void onAddServerClicked();
     void onSettingsClicked();
-    void onServerDoubleClicked(const QModelIndex& index);
+    void onServerDoubleClicked();
     void onServerSelected(int currentRow);
     void onEditServerClicked();
     void onDeleteServerClicked();
@@ -65,8 +67,9 @@ private:
     bool parseProfileFromUrl(const QString& url, ProfileItem& profile);
     void updateStatusBar();
     void loadStyleSheet();
+    void initServerGrid();
     void testLatency(const QString& address, int port);
-
+    void addCardToGrid(const QString& title, const QString& subText);
     // Traffic statistics
     qint64 m_bytesReceived = 0;
     qint64 m_bytesSent = 0;
@@ -76,13 +79,13 @@ private:
     void startStatsTimer();
     void stopStatsTimer();
     void updateStats();
-
-    // Auto reconnect
-    QTimer* m_reconnectTimer = nullptr;
-    bool m_autoReconnect = true;
     void startReconnectTimer();
     void stopReconnectTimer();
     void onReconnectTimeout();
+    // Auto reconnect
+    QTimer* m_reconnectTimer = nullptr;
+    bool m_autoReconnect = true;
+
 
 private:
     Ui::v2raycppClass ui;
@@ -97,4 +100,7 @@ private:
     // For window dragging
     bool m_dragging;
     QPoint m_dragPosition;
+
+    // Server grid (new card-style UI)
+    ServerGridWidget* m_serverGrid = nullptr;
 };
