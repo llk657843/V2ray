@@ -21,14 +21,14 @@ class v2raycpp : public QWidget
     Q_OBJECT
 
 public:
-    v2raycpp(QWidget *parent = nullptr);
+    v2raycpp(QWidget* parent = nullptr);
     ~v2raycpp();
 
 protected:
-    void mousePressEvent(QMouseEvent *event) override;
-    void mouseMoveEvent(QMouseEvent *event) override;
-    void mouseReleaseEvent(QMouseEvent *event) override;
-    void closeEvent(QCloseEvent *event) override;
+    void mousePressEvent(QMouseEvent* event) override;
+    void mouseMoveEvent(QMouseEvent* event) override;
+    void mouseReleaseEvent(QMouseEvent* event) override;
+    void closeEvent(QCloseEvent* event) override;
 
 private slots:
     //void onCloseClicked();
@@ -69,7 +69,9 @@ private:
     void loadStyleSheet();
     void initServerGrid();
     void testLatency(const QString& address, int port);
-    void addCardToGrid(const QString& title, const QString& subText);
+    // 新增：把 card 与服务器索引关联，默认 -1 表示没有绑定 profile
+    void addCardToGrid(const QString& title, const QString& protocol = QString(), int latency = -1, bool connected = false, int serverIndex = -1);
+
     // Traffic statistics
     qint64 m_bytesReceived = 0;
     qint64 m_bytesSent = 0;

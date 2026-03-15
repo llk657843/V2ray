@@ -96,6 +96,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <QtMoc Include="SimpleCard.h" />
     <QtMoc Include="ServerGridWidget.h" />
     <QtMoc Include="ServerCardWidget.h" />
     <QtMoc Include="include\XrayApiClient.h" />

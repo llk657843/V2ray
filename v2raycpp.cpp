@@ -26,7 +26,6 @@
 #include <QDialogButtonBox>
 #include <QFrame>
 #include <QGridLayout>
-
 #include "SimpleCard.h"
 
 v2raycpp::v2raycpp(QWidget *parent)
@@ -1050,7 +1049,6 @@ void v2raycpp::onDisableSystemProxy()
     // statusBar()->showMessage() removed - using statusLabel instead
 }
 
-
 // ==================== Latency Test Functions ====================
 
 void v2raycpp::testLatency(const QString& address, int port)
@@ -1126,13 +1124,13 @@ void v2raycpp::addServerToList(const ProfileItem& profile)
     
     // serverList removed - using grid only
     // Also add to new card-style grid
-            // Get protocol string from config type
+    // Get protocol string from config type
     QString protocol;
+    bool isConnected = false;
     if (m_serverGrid) {
         QString name = QString::fromStdString(profile.getRemark().empty() ? 
                        profile.getAddress() : profile.getRemark());
         
-
         switch (profile.getConfigType()) {
             case EConfigType::VMess: protocol = "VMess"; break;
             case EConfigType::VLESS: protocol = "VLESS"; break;
@@ -1147,20 +1145,106 @@ void v2raycpp::addServerToList(const ProfileItem& profile)
         
         QString flagPath = ""; // TODO: Add flag based on country
         int latency = -1; // TODO: Test latency
-        bool isConnected = (m_currentStatus == CoreStatus::Running && 
+        isConnected = (m_currentStatus == CoreStatus::Running &&
                           profile.getAddress() == m_currentProfile.getAddress());
         m_serverGrid->addServer(name, latency, protocol, flagPath, isConnected);
     }
     
+    // 查找此 profile 在 m_serverProfiles 的索引（可能是最后一个）
+    int serverIndex = -1;
+    for (int i = 0; i < (int)m_serverProfiles.size(); ++i) {
+        const ProfileItem &p = m_serverProfiles[i];
+        if (p.getAddress() == profile.getAddress()
+            && p.getPort() == profile.getPort()
+            && p.getRemark() == profile.getRemark()) {
+            serverIndex = i;
+            break;
+        }
+    }
+
     // 同时将卡片添加到主 UI 的 gridLayout（若存在）
     if (ui.gridLayout)
     {
-        // 标题使用备注或地址+端口
         QString label = QString::fromStdString(profile.getRemark().empty() ?
                                                profile.getAddress() : profile.getRemark());
-        addCardToGrid(label, protocol);
+        // protocol 传入展示为 status
+        addCardToGrid(label, protocol, -1, isConnected, serverIndex);
     }
- }
+}
+
+void v2raycpp::addCardToGrid(const QString& title, const QString& protocol, int latency, bool connected, int serverIndex)
+{
+    if (!ui.gridLayout) return;
+
+    SimpleCard* card = new SimpleCard(this);
+    card->setNodeInfo(title, latency, protocol, connected);
+    card->setFlag(QString()); // 暂不设置国家图标
+
+    // 绑定点击与切换行为，使用 serverIndex 操作对应 profile
+    connect(card, &SimpleCard::clicked, this, [this, serverIndex]() {
+        if (serverIndex >= 0 && serverIndex < (int)m_serverProfiles.size()) {
+            m_currentProfile = m_serverProfiles[serverIndex];
+            updateStatusBar();
+            qDebug() << "Selected profile index:" << serverIndex;
+        }
+        else {
+            qDebug() << "Card clicked (no bound server):" << serverIndex;
+        }
+    });
+
+    connect(card, &SimpleCard::toggled, this, [this, serverIndex](bool on) {
+        if (serverIndex >= 0 && serverIndex < (int)m_serverProfiles.size()) {
+            m_currentProfile = m_serverProfiles[serverIndex];
+            if (on) {
+                qDebug() << "Toggled ON for profile index:" << serverIndex;
+                onStartClicked();
+            }
+            else {
+                qDebug() << "Toggled OFF for profile index:" << serverIndex;
+                onStopClicked();
+            }
+        }
+        else {
+            qDebug() << "Toggled (no bound server):" << on;
+        }
+    });
+
+    QGridLayout* g = ui.gridLayout;
+    const int columns = 2;
+
+    // 尝试找到 cardAddNode 在 layout 中的位置
+    int addNodeIndex = -1;
+    for (int i = 0; i < g->count(); ++i)
+    {
+        QLayoutItem* item = g->itemAt(i);
+        if (!item) continue;
+        QWidget* w = item->widget();
+        if (w == ui.cardAddNode) { addNodeIndex = i; break; }
+    }
+
+    if (addNodeIndex != -1)
+    {
+        int r, c, rs, cs;
+        g->getItemPosition(addNodeIndex, &r, &c, &rs, &cs);
+        // 将新卡放到 add node 的位置
+        g->addWidget(card, r, c);
+
+        // 把 cardAddNode 推到下一个格子
+        int newR = r;
+        int newC = c + 1;
+        if (newC >= columns) { newC = 0; newR = r + 1; }
+        g->removeWidget(ui.cardAddNode);
+        g->addWidget(ui.cardAddNode, newR, newC);
+    }
+    else
+    {
+        // 追加逻辑
+        int idx = g->count();
+        int r = idx / columns;
+        int c = idx % columns;
+        g->addWidget(card, r, c);
+    }
+}
 
 ProfileItem v2raycpp::getSelectedProfile() const
 {
@@ -1331,61 +1415,3 @@ void v2raycpp::onSearchTextChanged(const QString& text)
         }
     }*/
 }
-
-// 将一个卡片插入到 designer 的 gridLayout 中。
-// 插入策略：如果能找到 ui.cardAddNode，则在其位置放入新卡片，并把 cardAddNode 推到下一个格子；
-// 否则按当前 count 计算位置追加。
-void v2raycpp::addCardToGrid(const QString &title, const QString &subText)
-{
-    if (!ui.gridLayout) return;
-
-    // 创建卡片并设置样式文本
-    SimpleCard *card = new SimpleCard(this);
-    card->setTitle(title);
-    card->setSubText(subText);
-    card->setIconText("\342\236\225"); // 使用与 designer 中相同的符号作为占位图标
-
-    QGridLayout *g = ui.gridLayout;
-    const int columns = 2; // 与 ui 设计保持 2 列
-
-    // 尝试找到 cardAddNode 在 layout 中的位置
-    int addNodeIndex = -1;
-    for (int i = 0; i < g->count(); ++i)
-    {
-        QLayoutItem *item = g->itemAt(i);
-        if (!item) continue;
-        QWidget *w = item->widget();
-        if (w == ui.cardAddNode) { addNodeIndex = i; break; }
-    }
-
-    if (addNodeIndex != -1)
-    {
-        int r, c, rs, cs;
-        g->getItemPosition(addNodeIndex, &r, &c, &rs, &cs);
-
-        // 放置新卡片在 cardAddNode 的原位置
-        g->addWidget(card, r, c);
-
-        // 将 cardAddNode 移动到下一个格子
-        int newR = r;
-        int newC = c + 1;
-        if (newC >= columns) { newC = 0; newR = r + 1; }
-        g->removeWidget(ui.cardAddNode);
-        g->addWidget(ui.cardAddNode, newR, newC);
-    }
-    else
-    {
-        // 退化：按当前 count 追加
-        int idx = g->count();
-        int r = idx / columns;
-        int c = idx % columns;
-        g->addWidget(card, r, c);
-    }
-
-    // 如果需要，可为 card 添加鼠标事件或点击逻辑（此处保持简单）
-}
-
-
-
-
-
