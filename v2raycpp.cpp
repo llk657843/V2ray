@@ -125,18 +125,54 @@ v2raycpp::~v2raycpp()
 
 void v2raycpp::mousePressEvent(QMouseEvent* event)
 {
+    // 拖拽顶部 40 像素区域移动窗口
+    if (event->pos().y() < 40) {
+        m_dragging = true;
+        m_dragPosition = event->globalPosition().toPoint() - frameGeometry().topLeft();
+        event->accept();
+    }
 }
 
 void v2raycpp::mouseMoveEvent(QMouseEvent* event)
 {
+    if (m_dragging) {
+        move(event->globalPosition().toPoint() - m_dragPosition);
+        event->accept();
+    }
 }
 
 void v2raycpp::mouseReleaseEvent(QMouseEvent* event)
 {
+    m_dragging = false;
 }
 
 void v2raycpp::closeEvent(QCloseEvent* event)
 {
+    // Save window position
+    QFile file("E:/v2raycpp/V2ray/window_pos.json");
+    if (file.open(QIODevice::WriteOnly)) {
+        QJsonObject obj;
+        obj["x"] = x();
+        obj["y"] = y();
+        obj["width"] = width();
+        obj["height"] = height();
+        QJsonDocument doc(obj);
+        file.write(doc.toJson());
+        file.close();
+    }
+    
+    // Stop reconnect timer
+    stopReconnectTimer();
+    
+    // Stop stats timer
+    stopStatsTimer();
+    
+    // Stop core if running
+    if (m_currentStatus == CoreStatus::Running) {
+        onStopClicked();
+    }
+    
+    event->accept();
 }
 
 void v2raycpp::initServerGrid()
@@ -1255,14 +1291,29 @@ void v2raycpp::updateStats()
 
 void v2raycpp::startReconnectTimer()
 {
+    if (!m_reconnectTimer) {
+        m_reconnectTimer = new QTimer(this);
+        connect(m_reconnectTimer, &QTimer::timeout, this, &v2raycpp::onReconnectTimeout);
+    }
+    // 5秒后重连
+    m_reconnectTimer->start(5000);
 }
 
 void v2raycpp::stopReconnectTimer()
 {
+    if (m_reconnectTimer) {
+        m_reconnectTimer->stop();
+    }
 }
 
 void v2raycpp::onReconnectTimeout()
 {
+    stopReconnectTimer();
+    
+    if (m_currentProfile.isValid()) {
+        qDebug() << "Auto reconnecting...";
+        onStartClicked();
+    }
 }
 
 void v2raycpp::onSearchTextChanged(const QString& text)
