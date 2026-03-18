@@ -1,5 +1,8 @@
 ﻿#include "v2raycpp.h"
 #include <QMouseEvent>
+#include <QIcon>
+#include <QSize>
+#include <QPixmap>
 #include "TrayIcon.h"
 #include "TrojanFmt.h"
 #include <QFileDialog>
@@ -224,10 +227,82 @@ void v2raycpp::initUI()
     // Set window title
     setWindowTitle("v2raycpp");
     
-    // Set sidebar button texts to English
-    if (ui.navHome) ui.navHome->setText("Home");
-    if (ui.navServers) ui.navServers->setText("Servers");
-    if (ui.navSettings) ui.navSettings->setText("Settings");
+    // Load PNG icons from images/figma directory
+    QString iconPath = "E:/V2RayCpp/V2ray/images/figma/";
+    
+    // Helper to load PNG icon
+    auto loadIcon = [&](const QString& name) {
+        return QIcon(iconPath + name + ".png");
+    };
+    
+    // Sidebar navigation icons
+    if (ui.navHome) {
+        ui.navHome->setText("Home");
+        ui.navHome->setIcon(loadIcon("nav_home"));
+        ui.navHome->setIconSize(QSize(20, 20));
+    }
+    if (ui.navServers) {
+        ui.navServers->setText("Servers");
+        ui.navServers->setIcon(loadIcon("nav_servers"));
+        ui.navServers->setIconSize(QSize(20, 20));
+    }
+    if (ui.navSettings) {
+        ui.navSettings->setText("Settings");
+        ui.navSettings->setIcon(loadIcon("nav_settings_1"));
+        ui.navSettings->setIconSize(QSize(20, 20));
+    }
+    if (ui.navStats) {
+        ui.navStats->setText("Statistics");
+        ui.navStats->setIcon(loadIcon("nav_stats"));
+        ui.navStats->setIconSize(QSize(20, 20));
+    }
+    if (ui.navHelp) {
+        ui.navHelp->setText("Help");
+        ui.navHelp->setIcon(loadIcon("nav_help"));
+        ui.navHelp->setIconSize(QSize(20, 20));
+    }
+    
+    // Header toolbar icons
+    if (ui.btnStartProxy) {
+        ui.btnStartProxy->setIcon(loadIcon("btn_power"));
+        ui.btnStartProxy->setIconSize(QSize(20, 20));
+    }
+    if (ui.toolAdd) {
+        ui.toolAdd->setIcon(loadIcon("btn_add"));
+        ui.toolAdd->setIconSize(QSize(18, 18));
+    }
+    if (ui.toolDl) {
+        ui.toolDl->setIcon(loadIcon("btn_download"));
+        ui.toolDl->setIconSize(QSize(18, 18));
+    }
+    if (ui.toolRefresh) {
+        ui.toolRefresh->setIcon(loadIcon("btn_refresh"));
+        ui.toolRefresh->setIconSize(QSize(18, 18));
+    }
+    if (ui.btnNotify) {
+        ui.btnNotify->setIcon(loadIcon("icon_notify"));
+        ui.btnNotify->setIconSize(QSize(18, 18));
+    }
+    
+    // Sidebar bottom
+    if (ui.btnDisconnect) {
+        ui.btnDisconnect->setIcon(loadIcon("btn_disconnect"));
+        ui.btnDisconnect->setIconSize(QSize(20, 20));
+    }
+    
+    // Status bar icons (using pixmap for QLabel)
+    if (ui.statConnLabel) {
+        ui.statConnLabel->setPixmap(QPixmap(iconPath + "status_connect.png").scaled(16, 16, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+    }
+    if (ui.statSpeedDown) {
+        ui.statSpeedDown->setPixmap(QPixmap(iconPath + "status_download.png").scaled(16, 16, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+    }
+    if (ui.statSpeedUp) {
+        ui.statSpeedUp->setPixmap(QPixmap(iconPath + "status_upload.png").scaled(16, 16, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+    }
+    if (ui.statIP) {
+        ui.statIP->setPixmap(QPixmap(iconPath + "status_ip.png").scaled(16, 16, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+    }
     
         // Server grid is created in initServerGrid()\n    // Old serverList not used\n    \n    // Connect new UI buttons
     if (ui.btnStartProxy)

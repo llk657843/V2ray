@@ -25,7 +25,7 @@ void ServerGridWidget::setupUi()
     m_scrollArea->setWidgetResizable(true);
     m_scrollArea->setAlignment(Qt::AlignTop | Qt::AlignLeft);
 
-    m_containerWidget = new QWidget();
+    m_containerWidget = new QWidget(this);
     m_scrollArea->setWidget(m_containerWidget);
 
     m_gridLayout = new QGridLayout(m_containerWidget);

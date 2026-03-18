@@ -1,4 +1,23 @@
 <RCC>
-    <qresource prefix="v2raycpp">
+    <qresource prefix="/images">
+        <file>images/figma/nav_home.png</file>
+        <file>images/figma/nav_servers.png</file>
+        <file>images/figma/nav_stats.png</file>
+        <file>images/figma/nav_settings_1.png</file>
+        <file>images/figma/nav_help.png</file>
+        <file>images/figma/btn_power.png</file>
+        <file>images/figma/btn_add.png</file>
+        <file>images/figma/btn_download.png</file>
+        <file>images/figma/btn_refresh.png</file>
+        <file>images/figma/btn_disconnect.png</file>
+        <file>images/figma/icon_search.png</file>
+        <file>images/figma/icon_notify.png</file>
+        <file>images/figma/status_connect.png</file>
+        <file>images/figma/status_download.png</file>
+        <file>images/figma/status_upload.png</file>
+        <file>images/figma/status_ip.png</file>
+        <file>images/figma/logo.png</file>
+    </qresource>
+    <qresource prefix="/v2raycpp">
     </qresource>
 </RCC>

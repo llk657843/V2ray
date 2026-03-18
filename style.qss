@@ -61,6 +61,7 @@ QPushButton[class="navItem"] {
     font-size: 14px;
     font-weight: 600;
     background-color: transparent;
+    icon-padding: 12px;
 }
 
 QPushButton[class="navItem"]:hover {
