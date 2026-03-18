@@ -41,20 +41,23 @@ v2raycpp::v2raycpp(QWidget *parent)
     
     // Load window position from config
     {
-        QFile file("E:/v2raycpp/V2ray/window_pos.json");
+        QString configPath = QCoreApplication::applicationDirPath() + "/../../window_pos.json";
+        QFile file(configPath);
         if (file.open(QIODevice::ReadOnly)) {
             QJsonDocument doc = QJsonDocument::fromJson(file.readAll());
             if (doc.isObject()) {
                 QJsonObject obj = doc.object();
-                int x = obj["x"].toInt(-1);
-                int y = obj["y"].toInt(-1);
-                int w = obj["width"].toInt(-1);
-                int h = obj["height"].toInt(-1);
-                if (x >= 0 && y >= 0 && w > 0 && h > 0) {
-                    setGeometry(x, y, w, h);
+                // 检查所有必要的 key 是否存在
+                if (obj.contains("x") && obj.contains("y") && obj.contains("width") && obj.contains("height")) {
+                    int x = obj["x"].toInt(-1);
+                    int y = obj["y"].toInt(-1);
+                    int w = obj["width"].toInt(-1);
+                    int h = obj["height"].toInt(-1);
+                    if (x >= 0 && y >= 0 && w > 0 && h > 0) {
+                        setGeometry(x, y, w, h);
+                    }
                 }
             }
-            file.close();
         }
     }
     
@@ -151,7 +154,8 @@ void v2raycpp::mouseReleaseEvent(QMouseEvent* event)
 void v2raycpp::closeEvent(QCloseEvent* event)
 {
     // Save window position
-    QFile file("E:/v2raycpp/V2ray/window_pos.json");
+    QString configPath = QCoreApplication::applicationDirPath() + "/../../window_pos.json";
+    QFile file(configPath);
     if (file.open(QIODevice::WriteOnly)) {
         QJsonObject obj;
         obj["x"] = x();
@@ -160,7 +164,6 @@ void v2raycpp::closeEvent(QCloseEvent* event)
         obj["height"] = height();
         QJsonDocument doc(obj);
         file.write(doc.toJson());
-        file.close();
     }
     
     // Stop reconnect timer
@@ -179,12 +182,14 @@ void v2raycpp::closeEvent(QCloseEvent* event)
 
 void v2raycpp::initServerGrid()
 {
+    // NOTE: Server grid is created via UI file (v2raycpp.ui)
+    // This function is kept for future customization if needed
 }
 
 void v2raycpp::loadStyleSheet()
 {
     // Load style sheet from application directory
-    QString styleFilePath = QCoreApplication::applicationDirPath() + "/style.qss";
+    QString styleFilePath = QCoreApplication::applicationDirPath() + "/../../style.qss";
     QFile styleFile(styleFilePath);
     if (!styleFile.open(QFile::ReadOnly | QFile::Text)) {
         qWarning() << "Failed to open style.qss:" << styleFile.errorString() << "Path:" << styleFilePath;
@@ -206,11 +211,11 @@ void v2raycpp::initUI()
     // Set window title
     setWindowTitle("v2raycpp");
     
-    // Load PNG icons from images/figma directory
-    QString iconPath = "E:/V2RayCpp/V2ray/images/figma/";
+    // Load PNG icons from images/figma directory (relative to exe)
+    QString iconPath = QCoreApplication::applicationDirPath() + "/../../images/figma/";
     
-    // Helper to load PNG icon
-    auto loadIcon = [&](const QString& name) {
+    // Helper to load PNG icon (explicit capture)
+    auto loadIcon = [iconPath](const QString& name) {
         return QIcon(iconPath + name + ".png");
     };
     
