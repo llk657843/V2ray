@@ -179,27 +179,14 @@ void v2raycpp::closeEvent(QCloseEvent* event)
 
 void v2raycpp::initServerGrid()
 {
-    // Create ServerGridWidget - serverList not in new UI
-    m_serverGrid = new ServerGridWidget(this);
-    m_serverGrid->setObjectName("serverGrid");
-    
-    // Connect grid signals
-    connect(m_serverGrid, &ServerGridWidget::serverClicked, this, [this](int index) {
-        if (index >= 0 && index < (int)m_serverProfiles.size()) {
-            // Select and optionally connect
-        }
-    });
-    
-    connect(m_serverGrid, &ServerGridWidget::serverToggled, this, [this](int index, bool connected) {
-        if (index >= 0 && index < (int)m_serverProfiles.size()) {
-            if (connected) {
-                m_currentProfile = m_serverProfiles[index];
-                onStartClicked();
-            } else {
-                onStopClicked();
-            }
-        }
-    });
+    // 方案 A：不使用 ServerGridWidget。隐藏 designer 的示例卡片，
+    // 保留 ui.cardAddNode 作为添加占位（addCardToGrid 逻辑依赖它）。
+    if (ui.cardUS) ui.cardUS->hide();
+    if (ui.cardJP) ui.cardJP->hide();
+    if (ui.cardSG) ui.cardSG->hide();
+    if (ui.cardDE) ui.cardDE->hide();
+    if (ui.cardUK) ui.cardUK->hide();
+    // ui.cardAddNode 保留
 }
 
 void v2raycpp::loadStyleSheet()
@@ -848,21 +835,17 @@ void v2raycpp::onImportClicked()
     {
         // Add to list
         m_serverProfiles.push_back(profile);
-
-        // Add to UI (grid)
         addServerToList(profile);
 
-        // Set as current profile
-        m_currentProfile = profile;
-
-        // Update status bar
+        // 选中新加入的 profile（不再调用 m_serverGrid）
+        m_currentProfile = m_serverProfiles.back();
         updateStatusBar();
 
         // 如果使用新的 grid，可以选中最后一个项（占位）
-        if (m_serverGrid) {
+        //if (m_serverGrid) {
             // TODO: 如果 ServerGridWidget 支持选择，调用相应方法选中最后一个项
             // e.g. m_serverGrid->selectIndex(static_cast<int>(m_serverProfiles.size()) - 1);
-        }
+        //}
 
         // statusBar()->showMessage() removed - using statusLabel instead
     }
@@ -1191,41 +1174,21 @@ void v2raycpp::onRefreshLatencyClicked()
 
 void v2raycpp::addServerToList(const ProfileItem& profile)
 {
-    QString itemText = QString("%1 - %2:%3")
-        .arg(QString::fromStdString(profile.getRemark().empty() ? 
-              profile.getAddress() : profile.getRemark()))
-        .arg(QString::fromStdString(profile.getAddress()))
-        .arg(profile.getPort());
-    
-    // serverList removed - using grid only
-    // Also add to new card-style grid
-    // Get protocol string from config type
+    QString label = QString::fromStdString(profile.getRemark().empty() ?
+                                           profile.getAddress() : profile.getRemark());
     QString protocol;
-    bool isConnected = false;
-    if (m_serverGrid) {
-        QString name = QString::fromStdString(profile.getRemark().empty() ? 
-                       profile.getAddress() : profile.getRemark());
-        
-        switch (profile.getConfigType()) {
-            case EConfigType::VMess: protocol = "VMess"; break;
-            case EConfigType::VLESS: protocol = "VLESS"; break;
-            case EConfigType::Trojan: protocol = "Trojan"; break;
-            case EConfigType::Shadowsocks: protocol = "Shadowsocks"; break;
-            case EConfigType::Socks: protocol = "Socks"; break;
-            case EConfigType::Http: protocol = "HTTP"; break;
-            case EConfigType::Hysteria2: protocol = "Hysteria2"; break;
-            case EConfigType::Tuic: protocol = "TUIC"; break;
-            default: protocol = "Unknown"; break;
-        }
-        
-        QString flagPath = ""; // TODO: Add flag based on country
-        int latency = -1; // TODO: Test latency
-        isConnected = (m_currentStatus == CoreStatus::Running &&
-                          profile.getAddress() == m_currentProfile.getAddress());
-        m_serverGrid->addServer(name, latency, protocol, flagPath, isConnected);
+    bool isConnected = (m_currentStatus == CoreStatus::Running &&
+                        profile.getAddress() == m_currentProfile.getAddress());
+
+    switch (profile.getConfigType()) {
+        case EConfigType::VMess: protocol = "VMess"; break;
+        case EConfigType::VLESS: protocol = "VLESS"; break;
+        case EConfigType::Trojan: protocol = "Trojan"; break;
+        case EConfigType::Shadowsocks: protocol = "Shadowsocks"; break;
+        default: protocol = "Unknown"; break;
     }
-    
-    // 查找此 profile 在 m_serverProfiles 的索引（可能是最后一个）
+
+    // 查找 profile 在 m_serverProfiles 的索引
     int serverIndex = -1;
     for (int i = 0; i < (int)m_serverProfiles.size(); ++i) {
         const ProfileItem &p = m_serverProfiles[i];
@@ -1236,13 +1199,11 @@ void v2raycpp::addServerToList(const ProfileItem& profile)
             break;
         }
     }
+    if (serverIndex == -1) serverIndex = static_cast<int>(m_serverProfiles.size()) - 1;
 
-    // 同时将卡片添加到主 UI 的 gridLayout（若存在）
+    // 只向 UI 的 gridLayout 添加卡片
     if (ui.gridLayout)
     {
-        QString label = QString::fromStdString(profile.getRemark().empty() ?
-                                               profile.getAddress() : profile.getRemark());
-        // protocol 传入展示为 status
         addCardToGrid(label, protocol, -1, isConnected, serverIndex);
     }
 }

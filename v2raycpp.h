@@ -14,7 +14,6 @@
 #include "AppConfig.h"
 #include "ProfileItem.h"
 #include "TrayIcon.h"
-#include "ServerGridWidget.h"
 
 class v2raycpp : public QWidget
 {
@@ -57,6 +56,7 @@ private slots:
 
 private:
     void initUI();
+    void initServerGrid();
     void initConnections();
     void updateUIStatus();
     bool generateCoreConfig(const ProfileItem& profile);
@@ -67,11 +67,8 @@ private:
     bool parseProfileFromUrl(const QString& url, ProfileItem& profile);
     void updateStatusBar();
     void loadStyleSheet();
-    void initServerGrid();
-    void testLatency(const QString& address, int port);
-    // 新增：把 card 与服务器索引关联，默认 -1 表示没有绑定 profile
     void addCardToGrid(const QString& title, const QString& protocol = QString(), int latency = -1, bool connected = false, int serverIndex = -1);
-
+    void testLatency(const QString& address, int port);
     // Traffic statistics
     qint64 m_bytesReceived = 0;
     qint64 m_bytesSent = 0;
@@ -102,7 +99,4 @@ private:
     // For window dragging
     bool m_dragging;
     QPoint m_dragPosition;
-
-    // Server grid (new card-style UI)
-    ServerGridWidget* m_serverGrid = nullptr;
 };
