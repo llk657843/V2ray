@@ -179,14 +179,6 @@ void v2raycpp::closeEvent(QCloseEvent* event)
 
 void v2raycpp::initServerGrid()
 {
-    // 方案 A：不使用 ServerGridWidget。隐藏 designer 的示例卡片，
-    // 保留 ui.cardAddNode 作为添加占位（addCardToGrid 逻辑依赖它）。
-    if (ui.cardUS) ui.cardUS->hide();
-    if (ui.cardJP) ui.cardJP->hide();
-    if (ui.cardSG) ui.cardSG->hide();
-    if (ui.cardDE) ui.cardDE->hide();
-    if (ui.cardUK) ui.cardUK->hide();
-    // ui.cardAddNode 保留
 }
 
 void v2raycpp::loadStyleSheet()
@@ -1214,16 +1206,14 @@ void v2raycpp::addCardToGrid(const QString& title, const QString& protocol, int 
 
     SimpleCard* card = new SimpleCard(this);
     card->setNodeInfo(title, latency, protocol, connected);
-    card->setFlag(QString()); // 暂不设置国家图标
+    card->setFlag(QString());
 
-    // 绑定点击与切换行为，使用 serverIndex 操作对应 profile
     connect(card, &SimpleCard::clicked, this, [this, serverIndex]() {
         if (serverIndex >= 0 && serverIndex < (int)m_serverProfiles.size()) {
             m_currentProfile = m_serverProfiles[serverIndex];
             updateStatusBar();
             qDebug() << "Selected profile index:" << serverIndex;
-        }
-        else {
+        } else {
             qDebug() << "Card clicked (no bound server):" << serverIndex;
         }
     });
@@ -1231,16 +1221,8 @@ void v2raycpp::addCardToGrid(const QString& title, const QString& protocol, int 
     connect(card, &SimpleCard::toggled, this, [this, serverIndex](bool on) {
         if (serverIndex >= 0 && serverIndex < (int)m_serverProfiles.size()) {
             m_currentProfile = m_serverProfiles[serverIndex];
-            if (on) {
-                qDebug() << "Toggled ON for profile index:" << serverIndex;
-                onStartClicked();
-            }
-            else {
-                qDebug() << "Toggled OFF for profile index:" << serverIndex;
-                onStopClicked();
-            }
-        }
-        else {
+            if (on) onStartClicked(); else onStopClicked();
+        } else {
             qDebug() << "Toggled (no bound server):" << on;
         }
     });
@@ -1248,38 +1230,73 @@ void v2raycpp::addCardToGrid(const QString& title, const QString& protocol, int 
     QGridLayout* g = ui.gridLayout;
     const int columns = 2;
 
-    // 尝试找到 cardAddNode 在 layout 中的位置
+    // 先尝试使用 grid 的父控件宽度（即内容区宽度）；若为 0 则回退到 主窗口 宽度减去侧边栏宽度
+    QWidget* gridParent = g->parentWidget();
+    int frameWidth = gridParent ? gridParent->width() : 0;
+    if (frameWidth <= 0) {
+        int sidebarWidth = 0;
+        if (ui.sidebarLayout && ui.sidebarLayout->parentWidget()) {
+            sidebarWidth = ui.sidebarLayout->parentWidget()->width();
+            if (sidebarWidth <= 0) sidebarWidth = 256; // Fallback 与 initUI 中设定一致
+        } else {
+            sidebarWidth = 256;
+        }
+        frameWidth = this->width() - sidebarWidth;
+        if (frameWidth <= 0) frameWidth = this->width();
+    }
+
+    int left, top, right, bottom;
+    g->getContentsMargins(&left, &top, &right, &bottom);
+    int spacing = g->horizontalSpacing();
+    if (spacing < 0) spacing = g->spacing();
+
+    int available = frameWidth - left - right - spacing * (columns - 1);
+    // 目标宽度为可用宽度的一半（两列），并设置合理最小值以避免过窄
+    int targetWidth = available / columns;
+    targetWidth = qMax(targetWidth, 240); // 可按需调整最小值（240px 更接近“占半边”视觉）
+
+    card->setFixedWidth(targetWidth);
+    if (ui.cardAddNode) ui.cardAddNode->setFixedWidth(targetWidth);
+
+    // 找到 AddNode 的位置并插入/推进
     int addNodeIndex = -1;
-    for (int i = 0; i < g->count(); ++i)
-    {
+    for (int i = 0; i < g->count(); ++i) {
         QLayoutItem* item = g->itemAt(i);
         if (!item) continue;
         QWidget* w = item->widget();
         if (w == ui.cardAddNode) { addNodeIndex = i; break; }
     }
 
-    if (addNodeIndex != -1)
-    {
+    if (addNodeIndex != -1) {
         int r, c, rs, cs;
         g->getItemPosition(addNodeIndex, &r, &c, &rs, &cs);
-        // 将新卡放到 add node 的位置
         g->addWidget(card, r, c);
-
-        // 把 cardAddNode 推到下一个格子
         int newR = r;
         int newC = c + 1;
         if (newC >= columns) { newC = 0; newR = r + 1; }
         g->removeWidget(ui.cardAddNode);
         g->addWidget(ui.cardAddNode, newR, newC);
-    }
-    else
-    {
-        // 追加逻辑
+    } else {
         int idx = g->count();
         int r = idx / columns;
         int c = idx % columns;
         g->addWidget(card, r, c);
     }
+
+    // 同步现有卡片与 AddNode 宽度，确保整齐
+    for (int i = 0; i < g->count(); ++i) {
+        QLayoutItem* item = g->itemAt(i);
+        if (!item) continue;
+        QWidget* w = item->widget();
+        if (!w) continue;
+        if (qobject_cast<SimpleCard*>(w) || w == ui.cardAddNode) {
+            w->setFixedWidth(targetWidth);
+        }
+    }
+
+    // 触发一次重绘/布局更新，确保宽度生效
+    if (gridParent) gridParent->updateGeometry();
+    this->update();
 }
 
 ProfileItem v2raycpp::getSelectedProfile() const
