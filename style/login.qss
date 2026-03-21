@@ -1,0 +1,173 @@
+/* General Background and Typography */
+#LoginWindow {
+    background-color: #0b0c10; /* Very dark background */
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+QWidget {
+    color: #ffffff;
+}
+
+/* Header */
+LoginWidget #logoLabel {
+    font-size: 18px;
+    font-weight: bold;
+    letter-spacing: 0.5px;
+}
+
+LoginWidget #closeButton {
+    background-color: #1a1c23;
+    color: #848995;
+    border: none;
+    border-radius: 16px;
+    min-width: 32px;
+    max-width: 32px;
+    min-height: 32px;
+    max-height: 32px;
+    font-size: 14px;
+}
+
+LoginWidget #closeButton:hover {
+    background-color: #2a2c35;
+    color: #ffffff;
+}
+
+/* Login Card Container */
+LoginWidget #loginCard {
+    background-color: #1c1e24; /* Dark gray panel */
+    border-radius: 12px;
+    min-width: 380px;
+    max-width: 380px;
+}
+
+/* Card Header Elements */
+LoginWidget #shieldIcon {
+    background-color: #e2e8f0; /* Light background for the badge */
+    color: #0b0c10;
+    border-radius: 8px;
+    min-width: 36px;
+    max-width: 36px;
+    min-height: 36px;
+    max-height: 36px;
+    font-size: 18px;
+    margin-bottom: 5px;
+}
+
+LoginWidget #titleLabel {
+    font-size: 22px;
+    font-weight: 600;
+}
+
+LoginWidget #subtitleLabel {
+    color: #848995;
+    font-size: 13px;
+}
+
+/* Input Fields Grouping */
+LoginWidget .fieldLabel {
+    color: #848995;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+}
+
+LoginWidget .inputGroup {
+    background-color: #272a32; /* Slightly lighter than card */
+    border-radius: 6px;
+    border: 1px solid transparent;
+}
+
+/* Simulate focus outline on the group (Qt doesn't support :focus-within perfectly, but we style the group and inputs) */
+LoginWidget .inputGroup:hover {
+    background-color: #2a2d36;
+}
+
+LoginWidget .inputIcon {
+    color: #848995;
+    font-size: 14px;
+}
+
+QLineEdit {
+    background-color: transparent;
+    border: none;
+    color: #e2e8f0;
+    font-size: 14px;
+    padding: 10px 0px;
+}
+
+QLineEdit::placeholder {
+    color: #5c6270;
+}
+
+QLineEdit:focus {
+    outline: none;
+}
+
+/* Specific Buttons inside Card */
+LoginWidget #forgotButton {
+    color: #848995;
+    background-color: transparent;
+    border: none;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+}
+
+LoginWidget #forgotButton:hover {
+    color: #ffffff;
+}
+
+LoginWidget #eyeButton {
+    color: #848995;
+    background-color: transparent;
+    border: none;
+    font-size: 16px;
+}
+
+LoginWidget #eyeButton:hover {
+    color: #ffffff;
+}
+
+LoginWidget #submitButton {
+    background-color: #2563eb; /* Bright accent blue */
+    color: #ffffff;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+LoginWidget #submitButton:hover {
+    background-color: #3b82f6;
+}
+
+LoginWidget #submitButton:pressed {
+    background-color: #1d4ed8;
+}
+
+LoginWidget #createAccountLabel {
+    font-size: 13px;
+    margin-top: 10px;
+}
+
+/* Footer elements */
+LoginWidget #copyrightLabel {
+    color: #5c6270;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+
+LoginWidget .footerLink {
+    color: #5c6270;
+    background-color: transparent;
+    border: none;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    padding: 0 10px;
+}
+
+LoginWidget .footerLink:hover {
+    color: #848995;
+}

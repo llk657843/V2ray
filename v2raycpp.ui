@@ -31,21 +31,27 @@
    </property>
    <item>
     <widget class="QFrame" name="fr_left">
+     <property name="maximumSize">
+      <size>
+       <width>256</width>
+       <height>16777215</height>
+      </size>
+     </property>
      <layout class="QVBoxLayout" name="sidebarLayout">
       <property name="spacing">
-       <number>15</number>
+       <number>8</number>
       </property>
       <property name="leftMargin">
-       <number>15</number>
+       <number>24</number>
       </property>
       <property name="topMargin">
-       <number>30</number>
+       <number>24</number>
       </property>
       <property name="rightMargin">
-       <number>15</number>
+       <number>24</number>
       </property>
       <property name="bottomMargin">
-       <number>30</number>
+       <number>24</number>
       </property>
       <item>
        <layout class="QHBoxLayout" name="logoLayout">
@@ -54,8 +60,20 @@
         </property>
         <item>
          <widget class="QLabel" name="logoIcon">
+          <property name="minimumSize">
+           <size>
+            <width>40</width>
+            <height>40</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>40</width>
+            <height>40</height>
+           </size>
+          </property>
           <property name="text">
-           <string>🛡️</string>
+           <string/>
           </property>
           <property name="class" stdset="0">
            <string>logoIcon</string>
@@ -218,7 +236,25 @@
       </item>
       <item>
        <widget class="QFrame" name="proPlanBox">
+        <property name="maximumSize">
+         <size>
+          <width>16777215</width>
+          <height>80</height>
+         </size>
+        </property>
         <layout class="QVBoxLayout">
+         <property name="leftMargin">
+          <number>16</number>
+         </property>
+         <property name="topMargin">
+          <number>12</number>
+         </property>
+         <property name="rightMargin">
+          <number>16</number>
+         </property>
+         <property name="bottomMargin">
+          <number>12</number>
+         </property>
          <item>
           <layout class="QHBoxLayout">
            <item>
@@ -293,6 +329,18 @@
       </property>
       <item>
        <widget class="QFrame" name="fr_top">
+        <property name="minimumSize">
+         <size>
+          <width>0</width>
+          <height>80</height>
+         </size>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>16777215</width>
+          <height>80</height>
+         </size>
+        </property>
         <layout class="QHBoxLayout">
          <property name="leftMargin">
           <number>40</number>
@@ -302,6 +350,18 @@
          </property>
          <item>
           <widget class="QPushButton" name="btnStartProxy">
+           <property name="minimumSize">
+            <size>
+             <width>180</width>
+             <height>40</height>
+            </size>
+           </property>
+           <property name="maximumSize">
+            <size>
+             <width>180</width>
+             <height>40</height>
+            </size>
+           </property>
            <property name="text">
             <string>Start System Proxy</string>
            </property>
@@ -315,7 +375,7 @@
            <item>
             <widget class="QPushButton" name="toolAdd">
              <property name="text">
-              <string>+</string>
+              <string/>
              </property>
              <property name="class" stdset="0">
               <string>iconBtn</string>
@@ -325,7 +385,7 @@
            <item>
             <widget class="QPushButton" name="toolDl">
              <property name="text">
-              <string>↓</string>
+              <string/>
              </property>
              <property name="class" stdset="0">
               <string>iconBtn</string>
@@ -335,7 +395,7 @@
            <item>
             <widget class="QPushButton" name="toolRefresh">
              <property name="text">
-              <string>↻</string>
+              <string/>
              </property>
              <property name="class" stdset="0">
               <string>iconBtn</string>
@@ -358,16 +418,33 @@
           </spacer>
          </item>
          <item>
-          <widget class="QLineEdit" name="searchBar">
-           <property name="placeholderText">
-            <string>🔍  Search nodes...</string>
+          <layout class="QHBoxLayout">
+           <property name="spacing">
+            <number>0</number>
            </property>
-          </widget>
+           <item>
+            <widget class="QLabel" name="searchIcon">
+             <property name="text">
+              <string/>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLineEdit" name="searchBar">
+             <property name="text">
+              <string/>
+             </property>
+             <property name="placeholderText">
+              <string>Search nodes...</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
          </item>
          <item>
           <widget class="QPushButton" name="btnNotify">
            <property name="text">
-            <string>🔔</string>
+            <string/>
            </property>
            <property name="class" stdset="0">
             <string>circleBtn</string>
@@ -580,87 +657,101 @@
        </widget>
       </item>
       <item>
-       <layout class="QHBoxLayout" name="layout_bottom">
-        <property name="leftMargin">
-         <number>30</number>
+       <widget class="QFrame" name="fr_bottom">
+        <property name="minimumSize">
+         <size>
+          <width>0</width>
+          <height>48</height>
+         </size>
         </property>
-        <property name="rightMargin">
-         <number>30</number>
+        <property name="maximumSize">
+         <size>
+          <width>16777215</width>
+          <height>48</height>
+         </size>
         </property>
-        <item>
-         <widget class="QLabel" name="statConnLabel">
-          <property name="text">
-           <string>● CONNECTED: US - SAN FRANCISCO</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <spacer>
-          <property name="orientation">
-           <enum>Qt::Orientation::Horizontal</enum>
-          </property>
-          <property name="sizeHint" stdset="0">
-           <size>
-            <width>0</width>
-            <height>0</height>
-           </size>
-          </property>
-         </spacer>
-        </item>
-        <item>
-         <widget class="QLabel" name="statSpeedDown">
-          <property name="text">
-           <string>↓ 4.2 MB/s</string>
-          </property>
-          <property name="class" stdset="0">
-           <string>statText</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QLabel" name="statSpeedUp">
-          <property name="text">
-           <string>↑ 128 KB/s</string>
-          </property>
-          <property name="class" stdset="0">
-           <string>statText</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <spacer>
-          <property name="orientation">
-           <enum>Qt::Orientation::Horizontal</enum>
-          </property>
-          <property name="sizeHint" stdset="0">
-           <size>
-            <width>0</width>
-            <height>0</height>
-           </size>
-          </property>
-         </spacer>
-        </item>
-        <item>
-         <widget class="QLabel" name="statIP">
-          <property name="text">
-           <string>🌐 IP: 104.28.19.42</string>
-          </property>
-          <property name="class" stdset="0">
-           <string>statText</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QLabel" name="statUptime">
-          <property name="text">
-           <string>⏱ UPTIME: 02:45:12</string>
-          </property>
-          <property name="class" stdset="0">
-           <string>statText</string>
-          </property>
-         </widget>
-        </item>
-       </layout>
+        <layout class="QHBoxLayout" name="layout_bottom">
+         <property name="leftMargin">
+          <number>32</number>
+         </property>
+         <property name="rightMargin">
+          <number>32</number>
+         </property>
+         <item>
+          <widget class="QLabel" name="statConnLabel">
+           <property name="text">
+            <string>CONNECTED: US - SAN FRANCISCO</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <spacer>
+           <property name="orientation">
+            <enum>Qt::Orientation::Horizontal</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>0</width>
+             <height>0</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
+         <item>
+          <widget class="QLabel" name="statSpeedDown">
+           <property name="text">
+            <string>4.2 MB/s</string>
+           </property>
+           <property name="class" stdset="0">
+            <string>statText</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLabel" name="statSpeedUp">
+           <property name="text">
+            <string>128 KB/s</string>
+           </property>
+           <property name="class" stdset="0">
+            <string>statText</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <spacer>
+           <property name="orientation">
+            <enum>Qt::Orientation::Horizontal</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>0</width>
+             <height>0</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
+         <item>
+          <widget class="QLabel" name="statIP">
+           <property name="text">
+            <string>IP: 104.28.19.42</string>
+           </property>
+           <property name="class" stdset="0">
+            <string>statText</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLabel" name="statUptime">
+           <property name="text">
+            <string>UPTIME: 02:45:12</string>
+           </property>
+           <property name="class" stdset="0">
+            <string>statText</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
       </item>
      </layout>
     </widget>
