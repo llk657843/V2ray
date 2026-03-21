@@ -1,8 +1,6 @@
 #include "LoginMainWidget.h"
 #include "LoginWidget.h"
-#include <QPainter>
-#include <QPainterPath>
-#include <QGraphicsDropShadowEffect>
+
 #include <QDebug>
 
 LoginMainWidget::LoginMainWidget(QWidget *parent)
@@ -19,67 +17,98 @@ LoginMainWidget::~LoginMainWidget()
 
 void LoginMainWidget::setupUi()
 {
-    // Main window settings
-    setFixedSize(460, 640);
-    setWindowFlags(Qt::FramelessWindowHint);
-    setAttribute(Qt::WA_TranslucentBackground);
-    setAttribute(Qt::WA_StyledBackground);
+    setObjectName("LoginMainWidget");
+    setWindowTitle("Kinetic Login");
+    setFixedSize(1200, 760);
+    setWindowFlags(Qt::FramelessWindowHint | Qt::Window);
+    setAttribute(Qt::WA_StyledBackground, true);
 
-    // Set dark background color
-    setStyleSheet("background-color: #0b0c10;");
-
-    // Main layout
     QVBoxLayout *mainLayout = new QVBoxLayout(this);
-    mainLayout->setContentsMargins(0, 0, 0, 0);
+    mainLayout->setContentsMargins(24, 18, 24, 18);
     mainLayout->setSpacing(0);
 
-    // Login page (page 0) - contains LoginWidget
-    QWidget *loginPage = new QWidget(this);
-    loginPage->setObjectName("loginPage");
-    QHBoxLayout *loginPageLayout = new QHBoxLayout(loginPage);
-    loginPageLayout->setContentsMargins(40, 40, 40, 40);
+    QWidget *header = new QWidget(this);
+    header->setObjectName("header");
+    header->setFixedHeight(56);
+    QHBoxLayout *headerLayout = new QHBoxLayout(header);
+    headerLayout->setContentsMargins(0, 0, 0, 0);
+    headerLayout->setSpacing(0);
 
-    LoginWidget *loginWidget = new LoginWidget(loginPage);
-    loginPageLayout->addWidget(loginWidget);
+    QLabel *logoLabel = new QLabel("KINETIC", header);
+    logoLabel->setObjectName("logoLabel");
+
+    QPushButton *closeButton = new QPushButton("x", header);
+    closeButton->setObjectName("closeButton");
+    closeButton->setCursor(Qt::PointingHandCursor);
+    closeButton->setFocusPolicy(Qt::NoFocus);
+    closeButton->setFixedSize(32, 32);
+
+    headerLayout->addWidget(logoLabel);
+    headerLayout->addStretch();
+    headerLayout->addWidget(closeButton);
+
+    QWidget *contentArea = new QWidget(this);
+    contentArea->setObjectName("contentArea");
+    QVBoxLayout *contentLayout = new QVBoxLayout(contentArea);
+    contentLayout->setContentsMargins(0, 0, 0, 0);
+    contentLayout->setSpacing(0);
+    contentLayout->addStretch();
+    contentLayout->addWidget(m_stackedWidget, 0, Qt::AlignCenter);
+    contentLayout->addStretch();
+
+    LoginWidget *loginWidget = new LoginWidget(contentArea);
+    QWidget *loginPage = new QWidget(contentArea);
+    loginPage->setObjectName("loginPage");
+    QVBoxLayout *loginPageLayout = new QVBoxLayout(loginPage);
+    loginPageLayout->setContentsMargins(0, 0, 0, 0);
+    loginPageLayout->addWidget(loginWidget, 0, Qt::AlignCenter);
+
     m_stackedWidget->addWidget(loginPage);
     m_pages["login"] = loginPage;
+    m_stackedWidget->setCurrentWidget(loginPage);
 
-    // Connect LoginWidget signals
-    connect(loginWidget, &LoginWidget::loginSuccess, this, [this]() {
+    QWidget *footer = new QWidget(this);
+    footer->setObjectName("footer");
+    footer->setFixedHeight(34);
+    QHBoxLayout *footerLayout = new QHBoxLayout(footer);
+    footerLayout->setContentsMargins(0, 0, 0, 0);
+    footerLayout->setSpacing(12);
+
+    QLabel *copyrightLabel = new QLabel(
+        "© 2024 KINETIC PROXY SYSTEMS. ALL RIGHTS RESERVED.",
+        footer);
+    copyrightLabel->setObjectName("copyrightLabel");
+
+    QPushButton *privacyButton = new QPushButton("PRIVACY POLICY", footer);
+    privacyButton->setObjectName("footerLinkButton");
+    privacyButton->setCursor(Qt::PointingHandCursor);
+    privacyButton->setFocusPolicy(Qt::NoFocus);
+
+    QPushButton *termsButton = new QPushButton("TERMS OF SERVICE", footer);
+    termsButton->setObjectName("footerLinkButton");
+    termsButton->setCursor(Qt::PointingHandCursor);
+    termsButton->setFocusPolicy(Qt::NoFocus);
+
+    footerLayout->addWidget(copyrightLabel);
+    footerLayout->addStretch();
+    footerLayout->addWidget(privacyButton);
+    footerLayout->addWidget(termsButton);
+
+    mainLayout->addWidget(header);
+    mainLayout->addWidget(contentArea, 1);
+    mainLayout->addWidget(footer);
+
+    connect(closeButton, &QPushButton::clicked, this, &LoginMainWidget::onCloseClicked);
+    connect(loginWidget, &LoginWidget::loginSuccess, this, [this](const QString &, const QString &) {
         emit loginSuccess();
     });
-    connect(loginWidget, &LoginWidget::closeClicked, this, [this]() {
-        emit loginClose();
-        close();
+    connect(loginWidget, &LoginWidget::closeClicked, this, &LoginMainWidget::onCloseClicked);
+    connect(loginWidget, &LoginWidget::forgotPasswordClicked, this, []() {
+        qDebug() << "Forgot password clicked";
     });
-    connect(loginWidget, &LoginWidget::forgotPasswordClicked, this, [this]() {
-        qDebug() << "Forgot password clicked - switch to reset verify page";
-        // Future: switchPage("resetVerify");
+    connect(loginWidget, &LoginWidget::signUpClicked, this, []() {
+        qDebug() << "Sign up clicked";
     });
-    connect(loginWidget, &LoginWidget::signUpClicked, this, [this]() {
-        qDebug() << "Sign up clicked - switch to create account page";
-        // Future: switchPage("createAccount");
-    });
-
-    // Placeholder pages (for future expansion)
-    QWidget *resetVerifyPage = new QWidget(this);
-    resetVerifyPage->setObjectName("resetVerifyPage");
-    QVBoxLayout *resetLayout = new QVBoxLayout(resetVerifyPage);
-    resetLayout->addWidget(new QLabel("Reset verify page (placeholder)", resetVerifyPage));
-    resetLayout->addStretch();
-    m_stackedWidget->addWidget(resetVerifyPage);
-    m_pages["resetVerify"] = resetVerifyPage;
-
-    QWidget *createAccountPage = new QWidget(this);
-    createAccountPage->setObjectName("createAccountPage");
-    QVBoxLayout *createLayout = new QVBoxLayout(createAccountPage);
-    createLayout->addWidget(new QLabel("Create account page (placeholder)", createAccountPage));
-    createLayout->addStretch();
-    m_stackedWidget->addWidget(createAccountPage);
-    m_pages["createAccount"] = createAccountPage;
-
-    mainLayout->addWidget(m_stackedWidget);
-    m_stackedWidget->setCurrentWidget(loginPage);
 }
 
 void LoginMainWidget::addPage(const QString &name, QWidget *widget)
@@ -107,15 +136,15 @@ void LoginMainWidget::mousePressEvent(QMouseEvent *event)
 {
     if (event->button() == Qt::LeftButton) {
         m_dragging = true;
-        m_dragPosition = mapToGlobal(event->pos()) - frameGeometry().topLeft();
+        m_dragPosition = event->globalPosition().toPoint() - frameGeometry().topLeft();
         event->accept();
     }
 }
 
 void LoginMainWidget::mouseMoveEvent(QMouseEvent *event)
 {
-    if (m_dragging && event->buttons() & Qt::LeftButton) {
-        move(mapToGlobal(event->pos()) - m_dragPosition);
+    if (m_dragging && (event->buttons() & Qt::LeftButton)) {
+        move(event->globalPosition().toPoint() - m_dragPosition);
         event->accept();
     }
 }

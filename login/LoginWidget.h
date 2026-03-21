@@ -28,15 +28,10 @@ signals:
 private slots:
     void onSubmitClicked();
     void onEyeClicked();
-    void onCloseClicked();
 
 private:
     void setupUi();
     void setupConnections();
-
-    // Header
-    QLabel *m_logoLabel;
-    QPushButton *m_closeButton;
 
     // Login Card
     QWidget *m_loginCard;
@@ -61,11 +56,6 @@ private:
     QPushButton *m_forgotButton;
     QPushButton *m_submitButton;
     QLabel *m_createAccountLabel;
-
-    // Footer
-    QLabel *m_copyrightLabel;
-    QPushButton *m_termsButton;
-    QPushButton *m_privacyButton;
 
     // State
     bool m_passwordVisible;
