@@ -1,20 +1,14 @@
-/* V2RayCpp Login - Kinetic Obsidian Style */
+/* V2RayCpp Login — selectors: QWidget#LoginMainWidget + control + #objectName */
 
-/* ================================
-   LoginMainWidget (Full Window)
-   ================================ */
-#LoginMainWidget {
+QWidget#LoginMainWidget {
     background-color: #111318;
 }
 
-/* ================================
-   Header
-   ================================ */
-#header {
+QWidget#LoginMainWidget QWidget#header {
     background-color: transparent;
 }
 
-#logoLabel {
+QWidget#LoginMainWidget QLabel#logoLabel {
     font-family: 'Manrope', 'Segoe UI', sans-serif;
     font-size: 20px;
     font-weight: 800;
@@ -22,7 +16,7 @@
     letter-spacing: 0.05em;
 }
 
-#closeButton {
+QWidget#LoginMainWidget QPushButton#closeButton {
     width: 40px;
     height: 40px;
     border-radius: 20px;
@@ -32,56 +26,48 @@
     font-size: 16px;
 }
 
-#closeButton:hover {
+QWidget#LoginMainWidget QPushButton#closeButton:hover {
     background-color: rgba(255, 255, 255, 0.1);
     color: #FFFFFF;
 }
 
-/* ================================
-   Login Card (Glassmorphism)
-   ================================ */
-#loginCard {
+QWidget#LoginMainWidget QWidget#loginCard {
     background: rgba(40, 42, 46, 0.75);
     border-radius: 12px;
     border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-#loginCard:hover {
+QWidget#LoginMainWidget QWidget#loginCard:hover {
     border: 1px solid rgba(255, 255, 255, 0.12);
 }
 
-/* ================================
-   Card Content - Typography
-   ================================ */
-#shieldIconContainer {
+QWidget#LoginMainWidget QWidget#shieldIconContainer {
     width: 48px;
     height: 48px;
     border-radius: 8px;
     background-color: #282A2E;
 }
 
-#shieldIcon {
+QWidget#LoginMainWidget QLabel#shieldIcon {
     font-size: 28px;
     color: #B4C5FF;
 }
 
-#titleLabel {
+QWidget#LoginMainWidget QWidget#loginCard QLabel#titleLabel {
     font-family: 'Manrope', 'Segoe UI', sans-serif;
     font-size: 22px;
     font-weight: 600;
     color: #FFFFFF;
 }
 
-#subtitleLabel {
+QWidget#LoginMainWidget QWidget#loginCard QLabel#subtitleLabel {
     font-family: 'Inter', 'Segoe UI', sans-serif;
     font-size: 13px;
     color: #C3C6D7;
 }
 
-/* ================================
-   Field Labels (Uppercase)
-   ================================ */
-#usernameFieldLabel, #passwordFieldLabel {
+QWidget#LoginMainWidget QWidget#loginCard QLabel#usernameFieldLabel,
+QWidget#LoginMainWidget QWidget#loginCard QLabel#passwordFieldLabel {
     font-family: 'Inter', 'Segoe UI', sans-serif;
     font-size: 10px;
     font-weight: 600;
@@ -90,28 +76,26 @@
     color: #C3C6D7;
 }
 
-/* ================================
-   Input Groups (Username/Password)
-   ================================ */
-#usernameGroup, #passwordGroup {
+QWidget#LoginMainWidget QFrame#usernameGroup,
+QWidget#LoginMainWidget QFrame#passwordGroup {
     background-color: rgba(51, 53, 57, 0.6);
     border-radius: 8px;
     border: 1px solid transparent;
 }
 
-#usernameGroup:focus-within, #passwordGroup:focus-within {
+QWidget#LoginMainWidget QFrame#usernameGroup:focus-within,
+QWidget#LoginMainWidget QFrame#passwordGroup:focus-within {
     border: 1px solid rgba(37, 99, 235, 0.4);
 }
 
-#usernameIcon, #passwordIcon {
+QWidget#LoginMainWidget QLabel#usernameIcon,
+QWidget#LoginMainWidget QLabel#passwordIcon {
     color: #C3C6D7;
     font-size: 18px;
 }
 
-/* ================================
-   Line Edits
-   ================================ */
-QLineEdit {
+QWidget#LoginMainWidget QLineEdit#usernameEdit,
+QWidget#LoginMainWidget QLineEdit#passwordEdit {
     background: transparent;
     border: none;
     font-family: 'Inter', 'Segoe UI', sans-serif;
@@ -120,32 +104,28 @@ QLineEdit {
     padding: 0;
 }
 
-QLineEdit::placeholder {
+QWidget#LoginMainWidget QLineEdit#usernameEdit::placeholder,
+QWidget#LoginMainWidget QLineEdit#passwordEdit::placeholder {
     color: rgba(195, 198, 215, 0.4);
 }
 
-QLineEdit:focus {
+QWidget#LoginMainWidget QLineEdit#usernameEdit:focus,
+QWidget#LoginMainWidget QLineEdit#passwordEdit:focus {
     outline: none;
 }
 
-/* ================================
-   Eye Toggle Button
-   ================================ */
-#eyeButton {
+QWidget#LoginMainWidget QPushButton#eyeButton {
     background: transparent;
     border: none;
     color: #C3C6D7;
     font-size: 18px;
 }
 
-#eyeButton:hover {
+QWidget#LoginMainWidget QPushButton#eyeButton:hover {
     color: #FFFFFF;
 }
 
-/* ================================
-   Forgot Button
-   ================================ */
-#forgotButton {
+QWidget#LoginMainWidget QPushButton#forgotButton {
     background: transparent;
     border: none;
     font-family: 'Inter', 'Segoe UI', sans-serif;
@@ -156,14 +136,11 @@ QLineEdit:focus {
     color: #B4C5FF;
 }
 
-#forgotButton:hover {
+QWidget#LoginMainWidget QPushButton#forgotButton:hover {
     color: #dbe1ff;
 }
 
-/* ================================
-   Submit Button (Gradient CTA)
-   ================================ */
-#submitButton {
+QWidget#LoginMainWidget QPushButton#submitButton {
     height: 48px;
     background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #2563EB, stop:1 #1D4ED8);
     color: #FFFFFF;
@@ -175,40 +152,47 @@ QLineEdit:focus {
     letter-spacing: 0.02em;
 }
 
-#submitButton:hover {
+QWidget#LoginMainWidget QPushButton#submitButton:hover {
     background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #3B82F6, stop:1 #2563EB);
     box-shadow: 0 0 20px rgba(37, 99, 235, 0.5);
 }
 
-#submitButton:pressed {
+QWidget#LoginMainWidget QPushButton#submitButton:pressed {
     background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #1D4ED8, stop:1 #1E40AF);
 }
 
-/* ================================
-   Card Separator (minimal)
-   ================================ */
-#cardSeparator {
+QWidget#LoginMainWidget QFrame#cardSeparator {
     border: none;
     background-color: rgba(255, 255, 255, 0.05);
     height: 1px;
 }
 
-/* ================================
-   Create Account Label
-   ================================ */
-#createAccountLabel {
+QWidget#LoginMainWidget QLabel#loginCreateAccountHint {
     font-family: 'Inter', 'Segoe UI', sans-serif;
     font-size: 13px;
+    color: #8f98aa;
 }
 
-/* ================================
-   Footer
-   ================================ */
-#footer {
+QWidget#LoginMainWidget QPushButton#loginCreateAccountLink {
+    background: transparent;
+    border: none;
+    font-family: 'Inter', 'Segoe UI', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    color: #d8deed;
+    padding: 0;
+    text-align: left;
+}
+
+QWidget#LoginMainWidget QPushButton#loginCreateAccountLink:hover {
+    color: #eef1f8;
+}
+
+QWidget#LoginMainWidget QWidget#footer {
     background-color: transparent;
 }
 
-#copyrightLabel {
+QWidget#LoginMainWidget QLabel#copyrightLabel {
     font-family: 'Inter', 'Segoe UI', sans-serif;
     font-size: 10px;
     font-weight: 500;
@@ -217,7 +201,8 @@ QLineEdit:focus {
     color: #64748b;
 }
 
-#footerLinkButton, #termsButton, #privacyButton {
+QWidget#LoginMainWidget QPushButton#footerPrivacyButton,
+QWidget#LoginMainWidget QPushButton#footerTermsButton {
     background: transparent;
     border: none;
     font-family: 'Inter', 'Segoe UI', sans-serif;
@@ -228,6 +213,7 @@ QLineEdit:focus {
     color: #64748b;
 }
 
-#footerLinkButton:hover, #termsButton:hover, #privacyButton:hover {
+QWidget#LoginMainWidget QPushButton#footerPrivacyButton:hover,
+QWidget#LoginMainWidget QPushButton#footerTermsButton:hover {
     color: #94a3b8;
 }

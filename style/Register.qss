@@ -1,0 +1,130 @@
+/* RegisterPage — RegisterPage#registerPageRoot + QWidget type + #objectName */
+
+RegisterPage#registerPageRoot {
+    background-color: transparent;
+}
+
+RegisterPage#registerPageRoot QFrame#registerCard {
+    background-color: #18181b;
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+RegisterPage#registerPageRoot QFrame#registerCard QLabel#titleLabel {
+    font-family: 'Inter', 'Manrope', 'Segoe UI', sans-serif;
+    font-size: 22px;
+    font-weight: 700;
+    color: #ffffff;
+    letter-spacing: -0.02em;
+}
+
+RegisterPage#registerPageRoot QFrame#registerCard QLabel#subtitleLabel {
+    font-family: 'Inter', 'Segoe UI', sans-serif;
+    font-size: 13px;
+    font-weight: 400;
+    color: #a1a1aa;
+}
+
+RegisterPage#registerPageRoot QFrame#registerCard QLabel#accountIdentifierLabel,
+RegisterPage#registerPageRoot QFrame#registerCard QLabel#securityKeyLabel,
+RegisterPage#registerPageRoot QFrame#registerCard QLabel#verifySecurityKeyLabel {
+    font-family: 'Inter', 'Segoe UI', sans-serif;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: #a1a1aa;
+}
+
+RegisterPage#registerPageRoot QFrame#registerCard QFrame#emailInputGroup,
+RegisterPage#registerPageRoot QFrame#registerCard QFrame#passwordInputGroup,
+RegisterPage#registerPageRoot QFrame#registerCard QFrame#verifyPasswordInputGroup {
+    background-color: #27272a;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+RegisterPage#registerPageRoot QFrame#registerCard QFrame#emailInputGroup:focus-within,
+RegisterPage#registerPageRoot QFrame#registerCard QFrame#passwordInputGroup:focus-within,
+RegisterPage#registerPageRoot QFrame#registerCard QFrame#verifyPasswordInputGroup:focus-within {
+    border: 1px solid rgba(47, 105, 255, 0.45);
+}
+
+RegisterPage#registerPageRoot QFrame#registerCard QLabel#emailIconLabel,
+RegisterPage#registerPageRoot QFrame#registerCard QLabel#passwordIconLabel,
+RegisterPage#registerPageRoot QFrame#registerCard QLabel#verifyPasswordIconLabel {
+    color: #a1a1aa;
+    font-size: 14px;
+    font-weight: 600;
+    background: transparent;
+}
+
+RegisterPage#registerPageRoot QFrame#registerCard QLineEdit#emailLineEdit,
+RegisterPage#registerPageRoot QFrame#registerCard QLineEdit#passwordLineEdit,
+RegisterPage#registerPageRoot QFrame#registerCard QLineEdit#verifyPasswordLineEdit {
+    background: transparent;
+    border: none;
+    font-family: 'Inter', 'Segoe UI', sans-serif;
+    font-size: 14px;
+    color: #ffffff;
+    padding: 0;
+    selection-background-color: #2f69ff;
+    selection-color: #ffffff;
+}
+
+RegisterPage#registerPageRoot QFrame#registerCard QLineEdit#emailLineEdit::placeholder,
+RegisterPage#registerPageRoot QFrame#registerCard QLineEdit#passwordLineEdit::placeholder,
+RegisterPage#registerPageRoot QFrame#registerCard QLineEdit#verifyPasswordLineEdit::placeholder {
+    color: rgba(161, 161, 170, 0.45);
+}
+
+RegisterPage#registerPageRoot QFrame#registerCard QPushButton#passwordEyeButton {
+    background: transparent;
+    border: none;
+    color: #a1a1aa;
+    font-size: 12px;
+    padding: 0;
+}
+
+RegisterPage#registerPageRoot QFrame#registerCard QPushButton#passwordEyeButton:hover {
+    color: #ffffff;
+}
+
+RegisterPage#registerPageRoot QFrame#registerCard QPushButton#initializeAccountBtn {
+    background-color: #2f69ff;
+    color: #ffffff;
+    border: none;
+    border-radius: 8px;
+    font-family: 'Inter', 'Segoe UI', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    padding: 0 16px;
+}
+
+RegisterPage#registerPageRoot QFrame#registerCard QPushButton#initializeAccountBtn:hover {
+    background-color: #3d76ff;
+}
+
+RegisterPage#registerPageRoot QFrame#registerCard QPushButton#initializeAccountBtn:pressed {
+    background-color: #2658d9;
+}
+
+RegisterPage#registerPageRoot QPushButton#backToLoginBtn {
+    color: #a1a1aa;
+    font-family: 'Inter', 'Segoe UI', sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    padding: 6px 12px;
+    background: transparent;
+    border: none;
+    text-transform: uppercase;
+}
+
+RegisterPage#registerPageRoot QPushButton#backToLoginBtn:hover {
+    color: #ffffff;
+}
+
+RegisterPage#registerPageRoot QPushButton#backToLoginBtn:pressed {
+    color: #71717a;
+}

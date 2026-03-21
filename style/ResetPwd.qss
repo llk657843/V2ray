@@ -1,0 +1,113 @@
+/* ResetPwd — QWidget#resetPwdPageRoot + control + #id */
+
+QWidget#resetPwdPageRoot {
+    background-color: transparent;
+}
+
+QWidget#resetPwdPageRoot QFrame#resetPwdCard {
+    background-color: #1c1c1e;
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+QWidget#resetPwdPageRoot QFrame#resetPwdCard QLabel#iconBadge {
+    background-color: #121214;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+QWidget#resetPwdPageRoot QFrame#resetPwdCard QLabel#iconGlyph {
+    color: #ffffff;
+    font-size: 22px;
+    font-weight: 600;
+    background: transparent;
+}
+
+QWidget#resetPwdPageRoot QFrame#resetPwdCard QLabel#titleLabel {
+    color: #ffffff;
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+}
+
+QWidget#resetPwdPageRoot QFrame#resetPwdCard QLabel#descriptionLabel {
+    color: #a1a1a1;
+    font-size: 13px;
+    font-weight: 400;
+    line-height: 1.45;
+    padding-top: 8px;
+}
+
+QWidget#resetPwdPageRoot QFrame#resetPwdCard QLabel#accountFieldLabel {
+    color: #a1a1a1;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+}
+
+QWidget#resetPwdPageRoot QFrame#resetPwdCard QLineEdit#accountInput {
+    background-color: #121214;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+    color: #ffffff;
+    font-size: 14px;
+    padding: 0 14px;
+    selection-background-color: #2b66f1;
+    selection-color: #ffffff;
+}
+
+QWidget#resetPwdPageRoot QFrame#resetPwdCard QLineEdit#accountInput:focus {
+    border: 1px solid #2b66f1;
+}
+
+QWidget#resetPwdPageRoot QFrame#resetPwdCard QLineEdit#accountInput::placeholder {
+    color: #6b6b6e;
+}
+
+QWidget#resetPwdPageRoot QFrame#resetPwdCard QPushButton#sendButton {
+    background-color: #2b66f1;
+    color: #ffffff;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    padding: 0 16px;
+}
+
+QWidget#resetPwdPageRoot QFrame#resetPwdCard QPushButton#sendButton:hover {
+    background-color: #3a74f3;
+}
+
+QWidget#resetPwdPageRoot QFrame#resetPwdCard QPushButton#sendButton:pressed {
+    background-color: #2458d4;
+}
+
+QWidget#resetPwdPageRoot QFrame#resetPwdCard QPushButton#sendButton:disabled {
+    background-color: #3d3d42;
+    color: #8a8a8e;
+}
+
+QWidget#resetPwdPageRoot QFrame#resetPwdCard QLabel#footerNoteLabel {
+    color: #7a7a7e;
+    font-size: 11px;
+    font-weight: 400;
+    line-height: 1.4;
+}
+
+QWidget#resetPwdPageRoot QPushButton#backToLoginButton {
+    color: #a1a1a1;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    padding: 6px 12px;
+    background: transparent;
+    border: none;
+}
+
+QWidget#resetPwdPageRoot QPushButton#backToLoginButton:hover {
+    color: #ffffff;
+}
+
+QWidget#resetPwdPageRoot QPushButton#backToLoginButton:pressed {
+    color: #8f98aa;
+}

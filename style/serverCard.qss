@@ -1,0 +1,71 @@
+/* Server list row cards — selectors: ServerCardWidget + control + #objectName */
+
+ServerCardWidget {
+    background-color: #f5f5f5;
+    border: 1px solid #e0e0e0;
+    border-radius: 12px;
+}
+
+ServerCardWidget:hover {
+    background-color: #eeeeee;
+}
+
+ServerCardWidget[connected="true"] {
+    background-color: #e8f0fe;
+    border: 1px solid #1152d4;
+    border-left: 3px solid #1152d4;
+    border-radius: 12px;
+}
+
+ServerCardWidget[connected="true"]:hover {
+    background-color: #d4e4fc;
+}
+
+ServerCardWidget QLabel#serverCardFlagLabel {
+    background-color: transparent;
+}
+
+ServerCardWidget QLabel#serverCardNameLabel {
+    font-size: 14px;
+    font-weight: bold;
+    color: #333333;
+}
+
+ServerCardWidget QLabel#serverCardLatencyLabel {
+    font-size: 12px;
+    color: #666666;
+}
+
+ServerCardWidget QLabel#serverCardLatencyLabel[latencyTier="good"] {
+    color: #4caf50;
+}
+
+ServerCardWidget QLabel#serverCardLatencyLabel[latencyTier="mid"] {
+    color: #ff9800;
+}
+
+ServerCardWidget QLabel#serverCardLatencyLabel[latencyTier="bad"] {
+    color: #f44336;
+}
+
+ServerCardWidget QLabel#serverCardLatencyLabel[latencyTier="unknown"] {
+    color: #666666;
+}
+
+ServerCardWidget QLabel#serverCardProtocolLabel {
+    font-size: 11px;
+    color: #999999;
+    background-color: #e0e0e0;
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+ServerCardWidget QPushButton#serverCardConnectBtn {
+    background-color: #cccccc;
+    border: none;
+    border-radius: 11px;
+}
+
+ServerCardWidget QPushButton#serverCardConnectBtn:checked {
+    background-color: #1152d4;
+}
