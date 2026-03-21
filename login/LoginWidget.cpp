@@ -127,16 +127,20 @@ void LoginWidget::setupUi()
     separator->setFrameShape(QFrame::HLine);
     separator->setFixedHeight(1);
 
-    m_createAccountLabel = new QLabel(
-        "<span style='color:#8f98aa;'>New to the network? </span>"
-        "<a href='create' style='color:#d8deed;text-decoration:none;font-weight:600;'>Create Account</a>",
-        m_loginCard);
-    m_createAccountLabel->setObjectName("createAccountLabel");
-    m_createAccountLabel->setAlignment(Qt::AlignCenter);
-    m_createAccountLabel->setTextFormat(Qt::RichText);
-    m_createAccountLabel->setTextInteractionFlags(Qt::TextBrowserInteraction);
-    m_createAccountLabel->setOpenExternalLinks(false);
-    m_createAccountLabel->setCursor(Qt::PointingHandCursor);
+    QHBoxLayout *createAccountRow = new QHBoxLayout();
+    createAccountRow->setContentsMargins(0, 0, 0, 0);
+    createAccountRow->setSpacing(0);
+    m_createAccountHint = new QLabel(tr("New to the network? "), m_loginCard);
+    m_createAccountHint->setObjectName("loginCreateAccountHint");
+    m_createAccountButton = new QPushButton(tr("Create Account"), m_loginCard);
+    m_createAccountButton->setObjectName("loginCreateAccountLink");
+    m_createAccountButton->setFlat(true);
+    m_createAccountButton->setCursor(Qt::PointingHandCursor);
+    m_createAccountButton->setFocusPolicy(Qt::NoFocus);
+    createAccountRow->addStretch();
+    createAccountRow->addWidget(m_createAccountHint);
+    createAccountRow->addWidget(m_createAccountButton);
+    createAccountRow->addStretch();
 
     cardLayout->addSpacing(6);
     cardLayout->addWidget(shieldContainer, 0, Qt::AlignCenter);
@@ -157,7 +161,7 @@ void LoginWidget::setupUi()
     cardLayout->addSpacing(22);
     cardLayout->addWidget(separator);
     cardLayout->addSpacing(18);
-    cardLayout->addWidget(m_createAccountLabel);
+    cardLayout->addLayout(createAccountRow);
     cardLayout->addStretch();
 
     mainLayout->addWidget(m_loginCard, 0, Qt::AlignCenter);
@@ -168,7 +172,7 @@ void LoginWidget::setupConnections()
     connect(m_submitButton, &QPushButton::clicked, this, &LoginWidget::onSubmitClicked);
     connect(m_eyeButton, &QPushButton::clicked, this, &LoginWidget::onEyeClicked);
     connect(m_forgotButton, &QPushButton::clicked, this, &LoginWidget::forgotPasswordClicked);
-    connect(m_createAccountLabel, &QLabel::linkActivated, this, [this](const QString &) {
+    connect(m_createAccountButton, &QPushButton::clicked, this, [this]() {
         emit signUpClicked();
     });
 }

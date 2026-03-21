@@ -32,6 +32,9 @@ protected:
 signals:
     void loginSuccess();
     void loginClose();
+    void verifyCodeSubmitted(const QString &code);
+    void resendVerificationRequested();
+    void resetLinkRequested(const QString &identifier);
 
 private slots:
     void onCloseClicked();

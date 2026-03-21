@@ -1,5 +1,8 @@
 #include "LoginMainWidget.h"
 #include "LoginWidget.h"
+#include "RegisterPage.h"
+#include "ResetPwd.h"
+#include "VerifyCodePage.h"
 
 #include <QDebug>
 
@@ -67,6 +70,52 @@ void LoginMainWidget::setupUi()
     m_pages["login"] = loginPage;
     m_stackedWidget->setCurrentWidget(loginPage);
 
+    VerifyCodePage *verifyCodePage = new VerifyCodePage(contentArea);
+    QWidget *verifyPage = new QWidget(contentArea);
+    verifyPage->setObjectName("verifyPage");
+    QVBoxLayout *verifyPageLayout = new QVBoxLayout(verifyPage);
+    verifyPageLayout->setContentsMargins(0, 0, 0, 0);
+    verifyPageLayout->addWidget(verifyCodePage, 0, Qt::AlignCenter);
+
+    m_stackedWidget->addWidget(verifyPage);
+    m_pages["verify"] = verifyPage;
+
+    connect(verifyCodePage, &VerifyCodePage::verifyRequested, this, &LoginMainWidget::verifyCodeSubmitted);
+    connect(verifyCodePage, &VerifyCodePage::resendRequested, this, &LoginMainWidget::resendVerificationRequested);
+
+    ResetPwd *resetPwdPage = new ResetPwd(contentArea);
+    QWidget *resetPage = new QWidget(contentArea);
+    resetPage->setObjectName("resetPwdPage");
+    QVBoxLayout *resetPageLayout = new QVBoxLayout(resetPage);
+    resetPageLayout->setContentsMargins(0, 0, 0, 0);
+    resetPageLayout->addWidget(resetPwdPage, 0, Qt::AlignCenter);
+
+    m_stackedWidget->addWidget(resetPage);
+    m_pages["resetPwd"] = resetPage;
+
+    connect(resetPwdPage, &ResetPwd::sendResetLinkRequested, this, &LoginMainWidget::resetLinkRequested);
+    connect(resetPwdPage, &ResetPwd::backToLoginRequested, this, [this]() {
+        switchPage(QStringLiteral("login"));
+    });
+
+    RegisterPage *registerPageWidget = new RegisterPage(contentArea);
+    QWidget *registerPage = new QWidget(contentArea);
+    registerPage->setObjectName("registerPage");
+    QVBoxLayout *registerPageLayout = new QVBoxLayout(registerPage);
+    registerPageLayout->setContentsMargins(0, 0, 0, 0);
+    registerPageLayout->addWidget(registerPageWidget, 0, Qt::AlignCenter);
+
+    m_stackedWidget->addWidget(registerPage);
+    m_pages["register"] = registerPage;
+
+    connect(registerPageWidget, &RegisterPage::backToLoginRequested, this, [this]() {
+        switchPage(QStringLiteral("login"));
+    });
+    connect(registerPageWidget, &RegisterPage::accountInitializeRequested, this,
+        [](const QString &email, const QString &) {
+            qDebug() << "Initialize account requested for" << email;
+        });
+
     QWidget *footer = new QWidget(this);
     footer->setObjectName("footer");
     footer->setFixedHeight(34);
@@ -80,12 +129,12 @@ void LoginMainWidget::setupUi()
     copyrightLabel->setObjectName("copyrightLabel");
 
     QPushButton *privacyButton = new QPushButton("PRIVACY POLICY", footer);
-    privacyButton->setObjectName("footerLinkButton");
+    privacyButton->setObjectName("footerPrivacyButton");
     privacyButton->setCursor(Qt::PointingHandCursor);
     privacyButton->setFocusPolicy(Qt::NoFocus);
 
     QPushButton *termsButton = new QPushButton("TERMS OF SERVICE", footer);
-    termsButton->setObjectName("footerLinkButton");
+    termsButton->setObjectName("footerTermsButton");
     termsButton->setCursor(Qt::PointingHandCursor);
     termsButton->setFocusPolicy(Qt::NoFocus);
 
@@ -103,11 +152,11 @@ void LoginMainWidget::setupUi()
         emit loginSuccess();
     });
     connect(loginWidget, &LoginWidget::closeClicked, this, &LoginMainWidget::onCloseClicked);
-    connect(loginWidget, &LoginWidget::forgotPasswordClicked, this, []() {
-        qDebug() << "Forgot password clicked";
+    connect(loginWidget, &LoginWidget::forgotPasswordClicked, this, [this]() {
+        switchPage(QStringLiteral("resetPwd"));
     });
-    connect(loginWidget, &LoginWidget::signUpClicked, this, []() {
-        qDebug() << "Sign up clicked";
+    connect(loginWidget, &LoginWidget::signUpClicked, this, [this]() {
+        switchPage(QStringLiteral("register"));
     });
 }
 

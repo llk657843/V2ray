@@ -55,7 +55,8 @@ private:
     // Actions
     QPushButton *m_forgotButton;
     QPushButton *m_submitButton;
-    QLabel *m_createAccountLabel;
+    QLabel *m_createAccountHint;
+    QPushButton *m_createAccountButton;
 
     // State
     bool m_passwordVisible;
