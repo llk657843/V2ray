@@ -1,11 +1,23 @@
 #include "SimpleCard.h"
 #include <QPixmap>
 #include <QDebug>
+#include <QStyle>
+
+namespace {
+void polishWidget(QWidget *w)
+{
+    if (!w || !w->style())
+        return;
+    w->style()->unpolish(w);
+    w->style()->polish(w);
+    w->update();
+}
+} // namespace
 
 SimpleCard::SimpleCard(QWidget* parent)
     : QFrame(parent)
 {
-    setObjectName("cardDynamic");
+    setAttribute(Qt::WA_StyledBackground, true);
     setProperty("class", "card");
     setFrameShape(QFrame::StyledPanel);
     setFrameShadow(QFrame::Raised);
@@ -19,7 +31,7 @@ SimpleCard::SimpleCard(QWidget* parent)
     m_topLayout->setSpacing(8);
 
     m_icon = new QLabel(this);
-    m_icon->setObjectName("iconDynamic");
+    m_icon->setObjectName("simpleCardIcon");
     m_icon->setProperty("class", "cardIcon");
     m_icon->setFixedSize(36, 36);
     m_icon->setAlignment(Qt::AlignCenter);
@@ -28,10 +40,10 @@ SimpleCard::SimpleCard(QWidget* parent)
     QVBoxLayout* vTitleLayout = new QVBoxLayout();
     vTitleLayout->setSpacing(2);
     m_title = new QLabel(this);
-    m_title->setObjectName("titleDynamic");
+    m_title->setObjectName("simpleCardTitle");
     m_title->setProperty("class", "cardTitle");
     m_status = new QLabel(this);
-    m_status->setObjectName("statusDynamic");
+    m_status->setObjectName("simpleCardStatus");
     m_status->setProperty("class", "statusGood");
 
     vTitleLayout->addWidget(m_title);
@@ -45,10 +57,10 @@ SimpleCard::SimpleCard(QWidget* parent)
     QVBoxLayout* vLatLayout = new QVBoxLayout();
     vLatLayout->setSpacing(2);
     m_lat = new QLabel(this);
-    m_lat->setObjectName("latDynamic");
+    m_lat->setObjectName("simpleCardLat");
     m_lat->setProperty("class", "latGood");
     m_latLabel = new QLabel(this);
-    m_latLabel->setObjectName("latLabelDynamic");
+    m_latLabel->setObjectName("simpleCardLatCaption");
     m_latLabel->setProperty("class", "latLabel");
     m_latLabel->setText("LATENCY");
 
@@ -64,6 +76,7 @@ SimpleCard::SimpleCard(QWidget* parent)
 
     // separator line
     m_line = new QFrame(this);
+    m_line->setObjectName("simpleCardDivider");
     m_line->setFrameShape(QFrame::HLine);
     m_line->setFrameShadow(QFrame::Sunken);
     m_line->setProperty("class", "cardLine");
@@ -75,10 +88,10 @@ SimpleCard::SimpleCard(QWidget* parent)
 
     // example tag placeholders (empty by default)
     QLabel* tag1 = new QLabel(this);
-    tag1->setObjectName("tag1Dynamic");
+    tag1->setObjectName("simpleCardTag1");
     tag1->setProperty("class", "tag");
     QLabel* tag2 = new QLabel(this);
-    tag2->setObjectName("tag2Dynamic");
+    tag2->setObjectName("simpleCardTag2");
     tag2->setProperty("class", "tag");
 
     // push toggle to right
@@ -86,8 +99,10 @@ SimpleCard::SimpleCard(QWidget* parent)
     spacer2->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
 
     m_toggle = new QCheckBox(this);
-    m_toggle->setObjectName("toggleDynamic");
+    m_toggle->setObjectName("simpleCardToggle");
     m_toggle->setProperty("class", "toggle");
+    m_toggle->setFocusPolicy(Qt::NoFocus);
+    m_toggle->setCursor(Qt::PointingHandCursor);
 
     hBottom->addWidget(tag1);
     hBottom->addWidget(tag2);
@@ -119,28 +134,33 @@ void SimpleCard::setNodeInfo(const QString& name, int latency, const QString& pr
         m_lat->setText("---");
         m_lat->setProperty("class", "latNull");
     }
+    polishWidget(m_lat);
 
     m_toggle->setChecked(connected);
 }
 
 void SimpleCard::setFlag(const QString& flagPath)
 {
-    // 如果是短文本（emoji），直接 setText；否则尝试加载 pixmap
     if (flagPath.isEmpty()) {
         m_icon->setText(QString());
         return;
     }
     if (flagPath.size() <= 4) {
         m_icon->setText(flagPath);
+        return;
     }
-    else {
-        QPixmap pm(flagPath);
-        if (!pm.isNull()) {
-            m_icon->setPixmap(pm.scaled(m_icon->size(), Qt::KeepAspectRatio, Qt::SmoothTransformation));
-        }
-        else {
-            m_icon->setText(flagPath);
-        }
+
+    QString path = flagPath;
+  
+        // 回退到 qrc 路径（支持传入短名例如 "flag.png" 或 "flag"）
+        path = QString(":/images/figma/%1").arg(flagPath);
+    
+
+    QPixmap pm(path);
+    if (!pm.isNull()) {
+        m_icon->setPixmap(pm.scaled(m_icon->size(), Qt::KeepAspectRatio, Qt::SmoothTransformation));
+    } else {
+        m_icon->setText(flagPath);
     }
 }
 

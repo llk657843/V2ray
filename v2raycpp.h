@@ -34,7 +34,6 @@ private slots:
     void onStartClicked();
     void onStopClicked();
     void onImportClicked();
-    void onAddServerClicked();
     void onSettingsClicked();
     void onServerDoubleClicked();
     void onServerSelected(int currentRow);
@@ -66,7 +65,6 @@ private:
     ProfileItem getSelectedProfile() const;
     bool parseProfileFromUrl(const QString& url, ProfileItem& profile);
     void updateStatusBar();
-    void loadStyleSheet();
     void addCardToGrid(const QString& title, const QString& protocol = QString(), int latency = -1, bool connected = false, int serverIndex = -1);
     void testLatency(const QString& address, int port);
     // Traffic statistics

@@ -373,26 +373,6 @@
             <number>10</number>
            </property>
            <item>
-            <widget class="QPushButton" name="toolAdd">
-             <property name="text">
-              <string/>
-             </property>
-             <property name="class" stdset="0">
-              <string>iconBtn</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QPushButton" name="toolDl">
-             <property name="text">
-              <string/>
-             </property>
-             <property name="class" stdset="0">
-              <string>iconBtn</string>
-             </property>
-            </widget>
-           </item>
-           <item>
             <widget class="QPushButton" name="toolRefresh">
              <property name="text">
               <string/>
@@ -607,38 +587,29 @@
            </property>
           </spacer>
          </item>
-         <item>
-          <layout class="QGridLayout" name="gridLayout">
-           <property name="spacing">
-            <number>25</number>
-           </property>
-           <item row="0" column="0">
-            <widget class="QFrame" name="cardAddNode">
-             <layout class="QVBoxLayout">
-              <item>
-               <widget class="QLabel" name="addNodeIcon">
-                <property name="text">
-                 <string>➕</string>
-                </property>
-                <property name="alignment">
-                 <set>Qt::AlignmentFlag::AlignCenter</set>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QLabel" name="addNodeText">
-                <property name="text">
-                 <string>Add New Node</string>
-                </property>
-                <property name="alignment">
-                 <set>Qt::AlignmentFlag::AlignCenter</set>
-                </property>
-               </widget>
-              </item>
-             </layout>
-            </widget>
-           </item>
-          </layout>
+         <item alignment="Qt::AlignmentFlag::AlignLeft">
+          <widget class="QFrame" name="fr_cards">
+           <layout class="QFormLayout" name="formLayout">
+            <property name="horizontalSpacing">
+             <number>25</number>
+            </property>
+            <property name="verticalSpacing">
+             <number>25</number>
+            </property>
+            <property name="leftMargin">
+             <number>0</number>
+            </property>
+            <property name="topMargin">
+             <number>0</number>
+            </property>
+            <property name="rightMargin">
+             <number>0</number>
+            </property>
+            <property name="bottomMargin">
+             <number>0</number>
+            </property>
+           </layout>
+          </widget>
          </item>
          <item>
           <spacer>

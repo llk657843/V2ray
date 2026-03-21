@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <Filter Include="Source Files">
@@ -26,6 +26,15 @@
     <QtRcc Include="v2raycpp.qrc">
       <Filter>Resource Files</Filter>
     </QtRcc>
+    <QtUic Include="login\verifyCodePage.ui">
+      <Filter>Form Files</Filter>
+    </QtUic>
+    <QtUic Include="login\resetPwd.ui">
+      <Filter>Form Files</Filter>
+    </QtUic>
+    <QtUic Include="login\registerPage.ui">
+      <Filter>Form Files</Filter>
+    </QtUic>
     <QtUic Include="v2raycpp.ui">
       <Filter>Form Files</Filter>
     </QtUic>
@@ -37,6 +46,15 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="login\VerifyCodePage.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="login\ResetPwd.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="login\RegisterPage.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -79,6 +97,9 @@
     <ClCompile Include="SimpleCard.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\ProfileManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\ProfileItem.h">
@@ -111,6 +132,9 @@
     <ClInclude Include="include\ServerGridWidget.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="include\ProfileManager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <QtMoc Include="include\CoreManager.h">
@@ -134,8 +158,20 @@
     <QtMoc Include="SimpleCard.h">
       <Filter>Header Files</Filter>
     </QtMoc>
+    <QtMoc Include="login\VerifyCodePage.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
+    <QtMoc Include="login\ResetPwd.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
+    <QtMoc Include="login\RegisterPage.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
   </ItemGroup>
   <ItemGroup>
+    <None Include="style\verifyCode.qss" />
+    <None Include="style\ResetPwd.qss" />
+    <None Include="style\Register.qss" />
     <None Include="style.qss" />
   </ItemGroup>
 </Project>

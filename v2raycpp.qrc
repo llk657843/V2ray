@@ -1,5 +1,5 @@
 <RCC>
-    <qresource prefix="/images">
+    <qresource prefix="/">
         <file>images/figma/nav_home.png</file>
         <file>images/figma/nav_servers.png</file>
         <file>images/figma/nav_stats.png</file>
@@ -18,6 +18,5 @@
         <file>images/figma/status_ip.png</file>
         <file>images/figma/logo.png</file>
     </qresource>
-    <qresource prefix="/v2raycpp">
-    </qresource>
+    <qresource prefix="/v2raycpp"/>
 </RCC>

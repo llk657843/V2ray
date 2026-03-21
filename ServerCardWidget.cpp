@@ -1,9 +1,19 @@
 #include "ServerCardWidget.h"
 #include <QEvent>
 #include <QMouseEvent>
-#include <QPainter>
-#include <QFile>
 #include <QDebug>
+#include <QStyle>
+
+namespace {
+void polishWidget(QWidget *w)
+{
+    if (!w || !w->style())
+        return;
+    w->style()->unpolish(w);
+    w->style()->polish(w);
+    w->update();
+}
+} // namespace
 
 ServerCardWidget::ServerCardWidget(QWidget *parent)
     : QWidget(parent)
@@ -13,6 +23,7 @@ ServerCardWidget::ServerCardWidget(QWidget *parent)
     , m_protocolLabel(new QLabel(this))
     , m_connectBtn(new QPushButton(this))
 {
+    setAttribute(Qt::WA_StyledBackground, true);
     setupUi();
     installEventFilter(this);
 }
@@ -26,55 +37,37 @@ void ServerCardWidget::setupUi()
     setFixedHeight(72);
     setContentsMargins(12, 8, 12, 8);
 
-    // Card style
-    setStyleSheet(R"(
-        ServerCardWidget {
-            background-color: #f5f5f5;
-            border: 1px solid #e0e0e0;
-            border-radius: 12px;
-        }
-        ServerCardWidget:hover {
-            background-color: #eeeeee;
-        }
-    )");
+    setProperty("connected", false);
 
     // Flag label
-    m_flagLabel->setObjectName("flagLabel");
+    m_flagLabel->setObjectName("serverCardFlagLabel");
     m_flagLabel->setFixedSize(32, 24);
     m_flagLabel->setScaledContents(true);
 
     // Name label
-    m_nameLabel->setObjectName("nameLabel");
+    m_nameLabel->setObjectName("serverCardNameLabel");
     m_nameLabel->setText("Server");
-    m_nameLabel->setStyleSheet("font-size: 14px; font-weight: bold; color: #333333;");
 
     // Latency label
-    m_latencyLabel->setObjectName("latencyLabel");
+    m_latencyLabel->setObjectName("serverCardLatencyLabel");
     m_latencyLabel->setText("-- ms");
-    m_latencyLabel->setStyleSheet("font-size: 12px; color: #666666;");
+    m_latencyLabel->setProperty("latencyTier", "unknown");
 
     // Protocol label
-    m_protocolLabel->setObjectName("protocolLabel");
+    m_protocolLabel->setObjectName("serverCardProtocolLabel");
     m_protocolLabel->setText("VMess");
-    m_protocolLabel->setStyleSheet("font-size: 11px; color: #999999; background-color: #e0e0e0; padding: 2px 6px; border-radius: 4px;");
 
-    // Connect button - toggle switch style
+    // Connect button - toggle switch style (styled in serverCard.qss)
+    m_connectBtn->setObjectName("serverCardConnectBtn");
     m_connectBtn->setFixedSize(44, 22);
     m_connectBtn->setCheckable(true);
     m_connectBtn->setCursor(Qt::PointingHandCursor);
-    m_connectBtn->setStyleSheet(R"(
-        QPushButton {
-            background-color: #cccccc;
-            border: none;
-            border-radius: 11px;
-        }
-        QPushButton:checked {
-            background-color: #1152d4;
-        }
-    )");
     m_connectBtn->setText("");
 
     connect(m_connectBtn, &QPushButton::toggled, this, &ServerCardWidget::onConnectToggled);
+
+    polishWidget(this);
+    polishWidget(m_latencyLabel);
 }
 
 void ServerCardWidget::setNodeInfo(const QString &name, int latency, const QString &protocol, bool connected)
@@ -82,22 +75,22 @@ void ServerCardWidget::setNodeInfo(const QString &name, int latency, const QStri
     m_nameLabel->setText(name);
     m_protocolLabel->setText(protocol);
 
-    // Latency with color
-    QString latencyColor;
+    QString tier = QStringLiteral("unknown");
     if (latency < 0) {
         m_latencyLabel->setText("-- ms");
-        latencyColor = "#666666";
+        tier = QStringLiteral("unknown");
     } else if (latency < 100) {
         m_latencyLabel->setText(QString::number(latency) + " ms");
-        latencyColor = "#4caf50"; // Green
+        tier = QStringLiteral("good");
     } else if (latency < 200) {
         m_latencyLabel->setText(QString::number(latency) + " ms");
-        latencyColor = "#ff9800"; // Orange/Yellow
+        tier = QStringLiteral("mid");
     } else {
         m_latencyLabel->setText(QString::number(latency) + " ms");
-        latencyColor = "#f44336"; // Red
+        tier = QStringLiteral("bad");
     }
-    m_latencyLabel->setStyleSheet(QString("font-size: 12px; color: %1;").arg(latencyColor));
+    m_latencyLabel->setProperty("latencyTier", tier);
+    polishWidget(m_latencyLabel);
 
     setConnected(connected);
 }
@@ -153,30 +146,6 @@ bool ServerCardWidget::eventFilter(QObject *obj, QEvent *event)
 
 void ServerCardWidget::updateConnectionState(bool connected)
 {
-    if (connected) {
-        // Connected: left border 3px main color #1152d4, darker background
-        setStyleSheet(R"(
-            ServerCardWidget {
-                background-color: #e8f0fe;
-                border: 1px solid #1152d4;
-                border-left: 3px solid #1152d4;
-                border-radius: 12px;
-            }
-            ServerCardWidget:hover {
-                background-color: #d4e4fc;
-            }
-        )");
-    } else {
-        // Not connected: gray border, light background
-        setStyleSheet(R"(
-            ServerCardWidget {
-                background-color: #f5f5f5;
-                border: 1px solid #e0e0e0;
-                border-radius: 12px;
-            }
-            ServerCardWidget:hover {
-                background-color: #eeeeee;
-            }
-        )");
-    }
+    setProperty("connected", connected);
+    polishWidget(this);
 }

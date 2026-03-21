@@ -96,23 +96,36 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <QtMoc Include="login\LoginWidget.h" />
+    <QtMoc Include="login\LoginMainWidget.h" />
+    <QtMoc Include="login\VerifyCodePage.h" />
+    <QtMoc Include="login\ResetPwd.h" />
+    <QtMoc Include="login\RegisterPage.h" />
     <QtMoc Include="SimpleCard.h" />
     <QtMoc Include="ServerGridWidget.h" />
     <QtMoc Include="ServerCardWidget.h" />
     <QtMoc Include="include\XrayApiClient.h" />
-    <None Include="style.qss">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
+    <ClInclude Include="include\ProfileManager.h" />
     <ClInclude Include="include\ServerGridWidget.h" />
     <ClInclude Include="include\V2rayConfig.h" />
     <QtRcc Include="v2raycpp.qrc" />
+    <QtUic Include="login.ui" />
+    <QtUic Include="login\verifyCodePage.ui" />
+    <QtUic Include="login\resetPwd.ui" />
+    <QtUic Include="login\registerPage.ui" />
     <QtUic Include="v2raycpp.ui" />
     <QtMoc Include="v2raycpp.h" />
+    <ClCompile Include="login\LoginMainWidget.cpp" />
+    <ClCompile Include="login\LoginWidget.cpp" />
+    <ClCompile Include="login\VerifyCodePage.cpp" />
+    <ClCompile Include="login\ResetPwd.cpp" />
+    <ClCompile Include="login\RegisterPage.cpp" />
     <ClCompile Include="ServerGridWidget.cpp" />
     <ClCompile Include="src\CoreManager.cpp" />
     <ClCompile Include="ServerCardWidget.cpp" />
     <ClCompile Include="SimpleCard.cpp" />
     <ClCompile Include="src\Logger.cpp" />
+    <ClCompile Include="src\ProfileManager.cpp" />
     <ClCompile Include="src\TrayIcon.cpp" />
     <ClCompile Include="v2raycpp.cpp" />
     <ClCompile Include="main.cpp" />
@@ -134,6 +147,13 @@
     <ClInclude Include="include\AppConfig.h" />
     <ClInclude Include="include\ConfigGenerator.h" />
     <ClInclude Include="include\Routing.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="style\login.qss" />
+    <None Include="style\main.qss" />
+    <None Include="style\verifyCode.qss" />
+    <None Include="style\ResetPwd.qss" />
+    <None Include="style\Register.qss" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Condition="Exists('$(QtMsBuild)\qt.targets')">
