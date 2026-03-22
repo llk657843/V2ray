@@ -10,32 +10,27 @@
 QString ConfigGenerator::generateClientConfig(const ProfileItem& node, const QString& routingMode)
 {
     ERoutingMode mode = Routing::getModeFromString(routingMode.toStdString());
-    return generateClientConfig(node, mode);
+    return generateClientConfig(node, mode, ConfigBuildKind::Full);
 }
 
-QString ConfigGenerator::generateClientConfig(const ProfileItem& node, ERoutingMode mode)
+QString ConfigGenerator::generateClientConfig(const ProfileItem& node, ERoutingMode mode, ConfigBuildKind buildKind)
 {
-    // 构建完整的 V2Ray 配置
-    QJsonObject config;
-
-    // 1. Log 配置
     QJsonObject logObj;
     logObj["loglevel"] = "warning";
+    QJsonObject config;
     config["log"] = logObj;
 
-    // 2. Inbounds 配置（SOCKS 10808 + HTTP 10809 + 端口转发）
-    config["inbounds"] = genInbounds(node);
+    if (buildKind == ConfigBuildKind::CoreLaunch) {
+        config["inbounds"] = genInboundsCoreLaunch();
+        config["outbounds"] = genOutbounds(node, ConfigBuildKind::CoreLaunch);
+        config["routing"] = genRoutingCoreLaunch();
+    } else {
+        config["inbounds"] = genInbounds(node);
+        config["outbounds"] = genOutbounds(node, ConfigBuildKind::Full);
+        config["routing"] = genRouting(mode);
+        config["dns"] = genDns();
+    }
 
-    // 3. Outbounds 配置（Trojan 出站）
-    config["outbounds"] = genOutbounds(node);
-
-    // 4. Routing 配置
-    config["routing"] = genRouting(mode);
-
-    // 5. DNS 配置
-    config["dns"] = genDns();
-
-    // 转换为 JSON 字符串
     QJsonDocument doc(config);
     return doc.toJson(QJsonDocument::Indented);
 }
@@ -118,47 +113,49 @@ QJsonArray ConfigGenerator::genInbounds(const ProfileItem& node)
     return inbounds;
 }
 
-QJsonArray ConfigGenerator::genOutbounds(const ProfileItem& node)
+QJsonObject ConfigGenerator::buildProxyOutboundStandard(const ProfileItem& node)
 {
-    QJsonArray outbounds;
-
-    // Determine protocol based on profile
     QString protocol;
-    switch (node.getConfigType())
-    {
-        case EConfigType::VMess: protocol = "vmess"; break;
-        case EConfigType::VLESS: protocol = "vless"; break;
-        case EConfigType::Trojan: protocol = "trojan"; break;
-        case EConfigType::Shadowsocks: protocol = "shadowsocks"; break;
-        default: protocol = "trojan";
+    switch (node.getConfigType()) {
+        case EConfigType::VMess:
+            protocol = "vmess";
+            break;
+        case EConfigType::VLESS:
+            protocol = "vless";
+            break;
+        case EConfigType::Trojan:
+            protocol = "trojan";
+            break;
+        case EConfigType::Shadowsocks:
+            protocol = "shadowsocks";
+            break;
+        default:
+            protocol = "trojan";
     }
 
-    // Proxy outbound
     QJsonObject proxyOutbound;
     proxyOutbound["tag"] = "proxy";
     proxyOutbound["protocol"] = protocol;
 
-    // Build settings based on protocol
     QJsonObject settings;
-    if (protocol == "trojan")
-    {
+    if (protocol == "trojan") {
         QJsonArray servers;
         QJsonObject server;
         server["address"] = QString::fromStdString(node.getAddress());
         server["port"] = node.getPort();
         server["password"] = QString::fromStdString(node.getPassword());
-        if (!node.getFlow().empty()) server["flow"] = QString::fromStdString(node.getFlow());
+        if (!node.getFlow().empty()) {
+            server["flow"] = QString::fromStdString(node.getFlow());
+        }
         server["level"] = 1;
         servers.append(server);
         settings["servers"] = servers;
-    }
-    else if (protocol == "vmess")
-    {
+    } else if (protocol == "vmess") {
         QJsonArray vnext;
         QJsonObject server;
         server["address"] = QString::fromStdString(node.getAddress());
         server["port"] = node.getPort();
-        
+
         QJsonArray users;
         QJsonObject user;
         user["id"] = QString::fromStdString(node.getUserId());
@@ -170,41 +167,142 @@ QJsonArray ConfigGenerator::genOutbounds(const ProfileItem& node)
         vnext.append(server);
         settings["vnext"] = vnext;
     }
-    // TODO: Add VLESS and Shadowsocks
-    
+
     proxyOutbound["settings"] = settings;
 
-    // Stream Settings
     QJsonObject streamSettings;
     streamSettings["network"] = QString::fromStdString(node.getNetwork().empty() ? "tcp" : node.getNetwork());
     streamSettings["security"] = QString::fromStdString(node.getSecurity().empty() ? "none" : node.getSecurity());
 
-    if (streamSettings["security"] == "tls")
-    {
+    if (streamSettings["security"] == "tls") {
         QJsonObject tlsSettings;
-        tlsSettings["serverName"] = QString::fromStdString(node.getSni().empty() ? node.getAddress() : node.getSni());
+        tlsSettings["serverName"] =
+            QString::fromStdString(node.getSni().empty() ? node.getAddress() : node.getSni());
         tlsSettings["allowInsecure"] = node.getAllowInsecure();
-        if (!node.getFingerprint().empty()) tlsSettings["fingerprint"] = QString::fromStdString(node.getFingerprint());
-        if (!node.getAlpn().empty()) tlsSettings["alpn"] = QJsonArray::fromStringList(QString::fromStdString(node.getAlpn()).split(","));
+        if (!node.getFingerprint().empty()) {
+            tlsSettings["fingerprint"] = QString::fromStdString(node.getFingerprint());
+        }
+        if (!node.getAlpn().empty()) {
+            tlsSettings["alpn"] = QJsonArray::fromStringList(QString::fromStdString(node.getAlpn()).split(","));
+        }
         streamSettings["tlsSettings"] = tlsSettings;
     }
 
     proxyOutbound["streamSettings"] = streamSettings;
+    return proxyOutbound;
+}
+
+QJsonObject ConfigGenerator::buildTrojanProxyOutboundCoreLaunch(const ProfileItem& node)
+{
+    QJsonObject outbound;
+    outbound["tag"] = "proxy";
+    outbound["protocol"] = "trojan";
+
+    QJsonArray servers;
+    QJsonObject server;
+    server["address"] = QString::fromStdString(node.getAddress());
+    server["password"] = QString::fromStdString(node.getPassword());
+    server["port"] = node.getPort();
+    server["level"] = 1;
+    servers.append(server);
+
+    QJsonObject trojanSettings;
+    trojanSettings["servers"] = servers;
+
+    if (node.getSecurity() == "tls") {
+        QJsonObject tlsSettings;
+        tlsSettings["serverName"] = QString::fromStdString(node.getSni());
+        tlsSettings["allowInsecure"] = true;
+
+        if (!node.getFingerprint().empty()) {
+            tlsSettings["fingerprint"] = QString::fromStdString(node.getFingerprint());
+        } else {
+            tlsSettings["fingerprint"] = "random";
+        }
+
+        QJsonArray alpn;
+        alpn.append("h2");
+        alpn.append("http/1.1");
+        tlsSettings["alpn"] = alpn;
+
+        QJsonObject streamSettings;
+        streamSettings["network"] = QString::fromStdString(node.getNetwork());
+        streamSettings["security"] = "tls";
+        streamSettings["tlsSettings"] = tlsSettings;
+
+        QJsonObject mux;
+        mux["enabled"] = false;
+        mux["concurrency"] = -1;
+        outbound["mux"] = mux;
+
+        outbound["streamSettings"] = streamSettings;
+    }
+
+    outbound["settings"] = trojanSettings;
+    return outbound;
+}
+
+QJsonArray ConfigGenerator::genOutbounds(const ProfileItem& node, ConfigBuildKind buildKind)
+{
+    const QJsonObject proxyOutbound =
+        (buildKind == ConfigBuildKind::CoreLaunch && node.getConfigType() == EConfigType::Trojan)
+            ? buildTrojanProxyOutboundCoreLaunch(node)
+            : buildProxyOutboundStandard(node);
+
+    QJsonArray outbounds;
     outbounds.append(proxyOutbound);
 
-    // Direct outbound
     QJsonObject directOutbound;
     directOutbound["tag"] = "direct";
     directOutbound["protocol"] = "freedom";
     outbounds.append(directOutbound);
 
-    // Block outbound
     QJsonObject blockOutbound;
     blockOutbound["tag"] = "block";
     blockOutbound["protocol"] = "blackhole";
     outbounds.append(blockOutbound);
 
     return outbounds;
+}
+
+QJsonArray ConfigGenerator::genInboundsCoreLaunch()
+{
+    QJsonArray inbounds;
+    QJsonObject inbound;
+    inbound["tag"] = "socks-inbound";
+    inbound["protocol"] = "socks";
+
+    QJsonObject socksSettings;
+    socksSettings["auth"] = "noauth";
+    socksSettings["udp"] = true;
+    socksSettings["ip"] = "127.0.0.1";
+    QJsonArray accounts;
+    socksSettings["accounts"] = accounts;
+    inbound["settings"] = socksSettings;
+
+    inbound["listen"] = "127.0.0.1";
+    inbound["port"] = AppConfig::instance().getLocalPort();
+
+    inbounds.append(inbound);
+    return inbounds;
+}
+
+QJsonObject ConfigGenerator::genRoutingCoreLaunch()
+{
+    QJsonObject routing;
+    routing["domainStrategy"] = "IPIfNonMatch";
+    routing["mode"] = "proxy";
+
+    QJsonObject rules;
+    rules["type"] = "field";
+    rules["outboundTag"] = "proxy";
+    rules["domain"] = QJsonArray::fromStringList({"geosite:category-ads-all"});
+
+    QJsonArray ruleArray;
+    ruleArray.append(rules);
+    routing["rules"] = ruleArray;
+
+    return routing;
 }
 
 QJsonObject ConfigGenerator::genRouting(ERoutingMode mode)
@@ -258,4 +356,17 @@ QJsonObject ConfigGenerator::genDns()
     dns["tag"] = "dns-inbound";
 
     return dns;
+}
+
+bool ConfigGenerator::writeStartupCoreConfig(const ProfileItem& profile, const QString& filePath)
+{
+    const QString json = generateClientConfig(profile, ERoutingMode::Proxy, ConfigBuildKind::CoreLaunch);
+    QFile file(filePath);
+    if (!file.open(QIODevice::WriteOnly)) {
+        qWarning() << "Failed to open config file for writing:" << filePath;
+        return false;
+    }
+    file.write(json.toUtf8());
+    file.close();
+    return true;
 }

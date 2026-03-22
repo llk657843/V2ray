@@ -5,7 +5,9 @@
 #include <QPixmap>
 #include <QPainter>
 #include "TrayIcon.h"
-#include "TrojanFmt.h"
+#include "ConfigGenerator.h"
+#include "XrayConfigStore.h"
+#include "ProfileManager.h"
 #include <QFileDialog>
 #include <QDateTime>
 #include <QTextEdit>
@@ -22,16 +24,10 @@
 #include <QInputDialog>
 #include <QShortcut>
 #include <Qt>
-#include <QtNetwork/QTcpSocket>
-#include <QtNetwork/QNetworkAccessManager>
-#include <QtNetwork/QNetworkReply>
-#include <QtNetwork/QNetworkRequest>
-#include <QElapsedTimer>
-#include <QThread>
-#include <QtConcurrent/QtConcurrentRun>
-#include <QFutureWatcher>
 #include <QPointer>
-#include <QUrl>
+#include "ServerCardProbeService.h"
+#include "TrafficStatsController.h"
+#include "ReconnectController.h"
 
 #include <QVBoxLayout>
 #include <QLabel>
@@ -93,17 +89,6 @@ QIcon makeSidebarNavIcon(const QString& imagePath, int iconPx, int trailingGapPx
     const QPixmap scaled = pm.scaled(iconPx, iconPx, Qt::KeepAspectRatio, Qt::SmoothTransformation);
     painter.drawPixmap(0, 0, scaled);
     return QIcon(canvas);
-}
-
-int tcpConnectLatencyMs(const QString& host, int port)
-{
-    QElapsedTimer timer;
-    timer.start();
-    QTcpSocket socket;
-    socket.connectToHost(host, port);
-    if (socket.waitForConnected(3000))
-        return static_cast<int>(timer.elapsed());
-    return -1;
 }
 
 void applyLabelIcon(QLabel* label, const QString& qrcPath, int px)
@@ -169,8 +154,29 @@ v2raycpp::v2raycpp(QWidget *parent)
     m_trayIcon->init();
     m_trayIcon->show();
 
-    m_geoNetwork = new QNetworkAccessManager(this);
-    
+    m_serverProbe = new ServerCardProbeService(this);
+    connect(m_serverProbe, &ServerCardProbeService::latencyMeasured, this, &v2raycpp::onProbeLatency);
+    connect(m_serverProbe, &ServerCardProbeService::geoFinished, this, &v2raycpp::onProbeGeo);
+
+    m_trafficStats = new TrafficStatsController(this);
+    connect(m_trafficStats, &TrafficStatsController::speedsUpdated, this, [this](const QString& down, const QString& up) {
+        if (ui.statSpeedDown) {
+            ui.statSpeedDown->setText(down);
+        }
+        if (ui.statSpeedUp) {
+            ui.statSpeedUp->setText(up);
+        }
+        if (ui.statUptime) {
+            ui.statUptime->setText(formatFooterUptime(m_startTime, m_currentStatus));
+        }
+    });
+
+    m_reconnectController = new ReconnectController(this);
+    connect(m_reconnectController, &ReconnectController::reconnectDue, this, [this]() {
+        qDebug() << "Auto reconnecting...";
+        onStartClicked();
+    });
+
     // Initialize UI (styles come from QApplication stylesheet in main.cpp)
     initUI();
     initServerGrid(); // 鍒濆鍖栧崱鐗囩綉鏍?
@@ -538,717 +544,46 @@ void v2raycpp::updateStatusBar()
     syncServerCardSelectionWithCurrentProfile();
 }
 
-bool v2raycpp::generateCoreConfig(const ProfileItem& profile)
-{
-    // Generate Xray core config JSON from profile
-    QJsonObject config;
-    
-    // Log settings
-    QJsonObject logObj;
-    logObj["loglevel"] = "warning";
-    config["log"] = logObj;
-    
-    // Inbounds (local proxy)
-    QJsonArray inbounds;
-    QJsonObject inbound;
-    inbound["tag"] = "socks-inbound";
-    inbound["protocol"] = "socks";
-    
-    QJsonObject socksSettings;
-    socksSettings["auth"] = "noauth";
-    socksSettings["udp"] = true;
-    socksSettings["ip"] = "127.0.0.1";
-    
-    QJsonArray accounts;
-    socksSettings["accounts"] = accounts;
-    
-    inbound["settings"] = socksSettings;
-    
-    inbound["listen"] = "127.0.0.1";
-    auto port = AppConfig::instance().getLocalPort();
-    inbound["port"] = port;
-    
-    inbounds.append(inbound);
-    config["inbounds"] = inbounds;
-    
-    // Outbounds (remote proxy)
-    QJsonArray outbounds;
-    QJsonObject outbound;
-    outbound["tag"] = "proxy";
-    
-    // Determine protocol based on profile
-    QString protocol;
-    switch (profile.getConfigType())
-    {
-        case EConfigType::VMess:
-            protocol = "vmess";
-            break;
-        case EConfigType::VLESS:
-            protocol = "vless";
-            break;
-        case EConfigType::Trojan:
-            protocol = "trojan";
-            break;
-        case EConfigType::Shadowsocks:
-            protocol = "shadowsocks";
-            break;
-        default:
-            protocol = "trojan";
-    }
-    
-    outbound["protocol"] = protocol.toStdString().c_str();
-    
-    // Build settings based on config type
-    QJsonObject settings;
-    
-    if (protocol == "trojan")
-    {
-        // Use servers array format like V2RayN
-        QJsonArray servers;
-        QJsonObject server;
-        server["address"] = profile.getAddress().c_str();
-        server["password"] = profile.getPassword().c_str();
-        server["port"] = profile.getPort();
-        server["level"] = 1;
-        servers.append(server);
-
-        QJsonObject trojanSettings;
-        trojanSettings["servers"] = servers;
-
-        // TLS settings
-        if (profile.getSecurity() == "tls")
-        {
-            QJsonObject tlsSettings;
-            tlsSettings["serverName"] = profile.getSni().c_str();
-            tlsSettings["allowInsecure"] = true;
-
-            if (!profile.getFingerprint().empty())
-            {
-                tlsSettings["fingerprint"] = profile.getFingerprint().c_str();
-            }
-            else
-            {
-                tlsSettings["fingerprint"] = "random";
-            }
-
-            QJsonArray alpn;
-            alpn.append("h2");
-            alpn.append("http/1.1");
-            tlsSettings["alpn"] = alpn;
-
-            QJsonObject streamSettings;
-            streamSettings["network"] = profile.getNetwork().c_str();
-            streamSettings["security"] = "tls";
-            streamSettings["tlsSettings"] = tlsSettings;
-
-            QJsonObject mux;
-            mux["enabled"] = false;
-            mux["concurrency"] = -1;
-            outbound["mux"] = mux;
-
-            outbound["streamSettings"] = streamSettings;
-        }
-
-        outbound["settings"] = trojanSettings;
-    }
-    
-    outbounds.append(outbound);
-    
-    // Direct outbound
-    QJsonObject directOutbound;
-    directOutbound["tag"] = "direct";
-    directOutbound["protocol"] = "freedom";
-    outbounds.append(directOutbound);
-    
-    // Block outbound
-    QJsonObject blockOutbound;
-    blockOutbound["tag"] = "block";
-    blockOutbound["protocol"] = "blackhole";
-    outbounds.append(blockOutbound);
-    
-    config["outbounds"] = outbounds;
-    
-    // Routing
-    QJsonObject routing;
-    routing["domainStrategy"] = "IPIfNonMatch";
-    routing["mode"] = "proxy";
-    
-    QJsonObject rules;
-    rules["type"] = "field";
-    rules["outboundTag"] = "proxy";
-    rules["domain"] = QJsonArray::fromStringList({"geosite:category-ads-all"});
-    
-    QJsonArray ruleArray;
-    ruleArray.append(rules);
-    routing["rules"] = ruleArray;
-    
-    config["routing"] = routing;
-    
-    // Write to config file
-    QJsonDocument doc(config);
-    QString configPath = AppConfig::instance().getCoreConfigPath();
-    
-    QFile file(configPath);
-    if (!file.open(QIODevice::WriteOnly))
-    {
-        qWarning() << "Failed to open config file for writing:" << configPath;
-        return false;
-    }
-    
-    file.write(doc.toJson(QJsonDocument::Indented));
-    file.close();
-    
-    return true;
-}
-
 void v2raycpp::loadConfig()
 {
-    // Load application configuration
     AppConfig::instance().load();
 
-    // Initialize core config path if not set
     if (AppConfig::instance().getCoreConfigPath().isEmpty()) {
         AppConfig::instance().setCoreConfigPath(AppConfig::instance().getDefaultConfigPath());
     }
 
-    // Load server list from Xray config.json file
-    // config.json format: { inbounds: [...], outbounds: [...], routing: {...} }
-    // Server info is stored in outbounds array, where each outbound represents a server
     QString configPath = AppConfig::instance().getConfigPath();
     QString configFile = configPath + "/config.json";
     qDebug() << "[DEBUG] AppConfig.getConfigPath() =" << configPath;
     qDebug() << "[DEBUG] Trying to open config file:" << configFile;
-    
-    QFile file(configFile);
-    if (!file.open(QIODevice::ReadOnly))
-    {
-        qDebug() << "[DEBUG] No config.json found at path:" << configFile;
+
+    QString err;
+    if (!XrayConfigStore::loadServerProfiles(configFile, m_serverProfiles, &err)) {
+        qWarning() << "[DEBUG] loadServerProfiles failed:" << err;
         return;
     }
-    
-    QByteArray data = file.readAll();
-    file.close();
-    
-    qDebug() << "[DEBUG] config.json content size:" << data.size();
-    
-    QJsonParseError parseError;
-    QJsonDocument doc = QJsonDocument::fromJson(data, &parseError);
-    if (parseError.error != QJsonParseError::NoError)
-    {
-        qWarning() << "[DEBUG] Failed to parse config.json:" << parseError.errorString();
-        return;
+
+    for (const auto& profile : m_serverProfiles) {
+        addServerToList(profile);
     }
-    
-    if (!doc.isObject())
-    {
-        qWarning() << "[DEBUG] config.json is not a valid JSON object";
-        return;
-    }
-    
-    QJsonObject root = doc.object();
-    QJsonArray outbounds = root["outbounds"].toArray();
-    
-    for (int i = 0; i < outbounds.size(); ++i)
-    {
-        QJsonObject outbound = outbounds[i].toObject();
-        QString protocol = outbound["protocol"].toString();
-        QString tag = outbound["tag"].toString();
-        
-        // Skip non-proxy outbounds (direct, block, dns, etc.)
-        if (tag == "direct" || tag == "block" || tag == "dns-outbound" || tag.isEmpty())
-        {
-            continue;
-        }
-        
-        // Parse server settings based on protocol
-        QJsonObject settings = outbound["settings"].toObject();
-        QJsonObject streamSettings = outbound["streamSettings"].toObject();
-        
-        ProfileItem profile;
-        profile.setRemark(tag.toStdString()); // Use tag as remark
-        
-        if (protocol == "trojan")
-        {
-            QJsonArray servers = settings["servers"].toArray();
-            if (servers.size() > 0)
-            {
-                QJsonObject server = servers[0].toObject();
-                profile.setAddress(server["address"].toString().toStdString());
-                profile.setPort(server["port"].toInt());
-                profile.setPassword(server["password"].toString().toStdString());
-                
-                // Load flow (for XTLS modes like xtls-rprx-vision)
-                QString flow = server["flow"].toString();
-                if (!flow.isEmpty())
-                {
-                    profile.setFlow(flow.toStdString());
-                }
-                
-                profile.setConfigType(EConfigType::Trojan);
-            }
-        }
-        else if (protocol == "vmess")
-        {
-            QJsonArray vnext = settings["vnext"].toArray();
-            if (vnext.size() > 0)
-            {
-                QJsonObject server = vnext[0].toObject();
-                profile.setAddress(server["address"].toString().toStdString());
-                profile.setPort(server["port"].toInt());
-                
-                QJsonArray users = server["users"].toArray();
-                if (users.size() > 0)
-                {
-                    QJsonObject user = users[0].toObject();
-                    profile.setUserId(user["id"].toString().toStdString());
-                    profile.setSecurity(user["security"].toString().toStdString());
-                }
-                profile.setConfigType(EConfigType::VMess);
-            }
-        }
-        else if (protocol == "vless")
-        {
-            QJsonArray vnext = settings["vnext"].toArray();
-            if (vnext.size() > 0)
-            {
-                QJsonObject server = vnext[0].toObject();
-                profile.setAddress(server["address"].toString().toStdString());
-                profile.setPort(server["port"].toInt());
-                
-                QJsonArray users = server["users"].toArray();
-                if (users.size() > 0)
-                {
-                    QJsonObject user = users[0].toObject();
-                    profile.setUserId(user["id"].toString().toStdString());
-                    
-                    // Load flow (for XTLS modes like xtls-rprx-vision)
-                    QString flow = user["flow"].toString();
-                    if (!flow.isEmpty())
-                    {
-                        profile.setFlow(flow.toStdString());
-                    }
-                }
-                profile.setConfigType(EConfigType::VLESS);
-            }
-        }
-        else
-        {
-            // Unsupported protocol, skip
-            continue;
-        }
-        
-        // Parse stream settings (common for all protocols)
-        QString network = streamSettings["network"].toString("tcp");
-        QString security = streamSettings["security"].toString("");
-        profile.setNetwork(network.toStdString());
-        profile.setSecurity(security.toStdString());
-        
-        // TLS settings
-        if (security == "tls")
-        {
-            QJsonObject tlsSettings = streamSettings["tlsSettings"].toObject();
-            profile.setSni(tlsSettings["serverName"].toString().toStdString());
-            profile.setAllowInsecure(tlsSettings["allowInsecure"].toBool(false));
-            
-            QJsonArray alpn = tlsSettings["alpn"].toArray();
-            if (alpn.size() > 0)
-            {
-                profile.setAlpn(alpn[0].toString().toStdString());
-            }
-            
-            QString fingerprint = tlsSettings["fingerprint"].toString();
-            if (!fingerprint.isEmpty())
-            {
-                profile.setFingerprint(fingerprint.toStdString());
-            }
-        }
-        
-        // Reality settings
-        if (security == "reality")
-        {
-            QJsonObject realitySettings = streamSettings["realitySettings"].toObject();
-            profile.setSni(realitySettings["serverName"].toString().toStdString());
-            
-            QString fingerprint = realitySettings["fingerprint"].toString();
-            if (!fingerprint.isEmpty())
-            {
-                profile.setFingerprint(fingerprint.toStdString());
-            }
-            
-            // Load Reality-specific fields
-            QString publicKey = realitySettings["publicKey"].toString();
-            if (!publicKey.isEmpty())
-            {
-                profile.setPublicKey(publicKey.toStdString());
-            }
-            
-            QString shortId = realitySettings["shortId"].toString();
-            if (!shortId.isEmpty())
-            {
-                profile.setShortId(shortId.toStdString());
-            }
-            
-            QString spiderX = realitySettings["spiderX"].toString();
-            if (!spiderX.isEmpty())
-            {
-                profile.setSpiderX(spiderX.toStdString());
-            }
-        }
-        
-        // Network-specific settings (WebSocket, gRPC, HTTP/2, etc.)
-        if (network == "ws")
-        {
-            // WebSocket settings
-            QJsonObject wsSettings = streamSettings["wsSettings"].toObject();
-            QString wsPath = wsSettings["path"].toString();
-            QString wsHost = wsSettings["host"].toString();
-            // Note: ProfileItem doesn't have path/host fields, would need to extend
-        }
-        else if (network == "grpc")
-        {
-            // gRPC settings
-            QJsonObject grpcSettings = streamSettings["grpcSettings"].toObject();
-            QString grpcServiceName = grpcSettings["serviceName"].toString();
-            QString grpcAuthority = grpcSettings["authority"].toString();
-            // Note: ProfileItem doesn't have path/host fields, would need to extend
-        }
-        else if (network == "h2")
-        {
-            // HTTP/2 settings
-            QJsonObject httpSettings = streamSettings["httpSettings"].toObject();
-            QString httpPath = httpSettings["path"].toString();
-            // Note: ProfileItem doesn't have path/host fields, would need to extend
-        }
-        
-        if (profile.isValid())
-        {
-            m_serverProfiles.push_back(profile);
-            addServerToList(profile);
-        }
-        else {
-            qDebug() << "[DEBUG] Skipping invalid profile at index" << i
-                     << "addr:" << QString::fromStdString(profile.getAddress())
-                     << "port:" << profile.getPort()
-                     << "remark:" << QString::fromStdString(profile.getRemark());
-        }
-    }
-    
-    qDebug() << "[DEBUG] Loaded" << m_serverProfiles.size() << "valid servers from config.json";
 
     syncServerCardSelectionWithCurrentProfile();
 }
 
+
 void v2raycpp::saveConfig()
 {
-    // Save application configuration
     AppConfig::instance().save();
-    
-    // Save server list to config.json in Xray format
-    // config.json format: { inbounds: [...], outbounds: [...], routing: {...} }
+
     QString configPath = AppConfig::instance().getConfigPath();
     QString configFile = configPath + "/config.json";
-    
-    // Read existing config.json to preserve inbounds, routing, etc.
-    QJsonObject root;
-    QFile readFile(configFile);
-    if (readFile.open(QIODevice::ReadOnly))
-    {
-        QJsonDocument existingDoc = QJsonDocument::fromJson(readFile.readAll());
-        readFile.close();
-        if (existingDoc.isObject())
-        {
-            root = existingDoc.object();
-        }
+
+    QString err;
+    if (!XrayConfigStore::saveServerProfiles(configFile, m_serverProfiles, &err)) {
+        qWarning() << "saveServerProfiles:" << err;
     }
-    
-    // Build outbounds array from server profiles
-    QJsonArray outbounds;
-    
-    for (int i = 0; i < m_serverProfiles.size(); ++i)
-    {
-        const ProfileItem& profile = m_serverProfiles[i];
-        
-        QJsonObject outbound;
-        outbound["tag"] = QString::fromStdString(profile.getRemark().empty() ? 
-                          QString("proxy-%1").arg(i + 1).toStdString() : profile.getRemark());
-        
-        // Set protocol based on config type
-        QString protocol;
-        switch (profile.getConfigType())
-        {
-            case EConfigType::VMess:
-                protocol = "vmess";
-                break;
-            case EConfigType::VLESS:
-                protocol = "vless";
-                break;
-            case EConfigType::Trojan:
-                protocol = "trojan";
-                break;
-            case EConfigType::Shadowsocks:
-                protocol = "shadowsocks";
-                break;
-            default:
-                protocol = "trojan";
-        }
-        outbound["protocol"] = protocol;
-        
-        // Build settings based on protocol
-        QJsonObject settings;
-        
-        if (protocol == "trojan")
-        {
-            QJsonArray servers;
-            QJsonObject server;
-            server["address"] = QString::fromStdString(profile.getAddress());
-            server["port"] = profile.getPort();
-            server["password"] = QString::fromStdString(profile.getPassword());
-            
-            // Save flow (for XTLS modes)
-            QString flow = QString::fromStdString(profile.getFlow());
-            if (!flow.isEmpty())
-            {
-                server["flow"] = flow;
-            }
-            
-            server["ota"] = false;
-            server["level"] = 1;
-            servers.append(server);
-            settings["servers"] = servers;
-        }
-        else if (protocol == "vmess")
-        {
-            QJsonArray vnext;
-            QJsonObject server;
-            server["address"] = QString::fromStdString(profile.getAddress());
-            server["port"] = profile.getPort();
-            
-            QJsonArray users;
-            QJsonObject user;
-            user["id"] = QString::fromStdString(profile.getUserId());
-            user["alterId"] = 0;
-            user["security"] = QString::fromStdString(profile.getSecurity().empty() ? "auto" : profile.getSecurity());
-            user["email"] = "user@v2raycpp";
-            users.append(user);
-            server["users"] = users;
-            
-            vnext.append(server);
-            settings["vnext"] = vnext;
-        }
-        else if (protocol == "vless")
-        {
-            QJsonArray vnext;
-            QJsonObject server;
-            server["address"] = QString::fromStdString(profile.getAddress());
-            server["port"] = profile.getPort();
-            
-            QJsonArray users;
-            QJsonObject user;
-            user["id"] = QString::fromStdString(profile.getUserId());
-            user["email"] = "user@v2raycpp";
-            user["encryption"] = "none";
-            
-            // Save flow (for XTLS modes)
-            QString flow = QString::fromStdString(profile.getFlow());
-            if (!flow.isEmpty())
-            {
-                user["flow"] = flow;
-            }
-            
-            users.append(user);
-            server["users"] = users;
-            
-            vnext.append(server);
-            settings["vnext"] = vnext;
-        }
-        
-        outbound["settings"] = settings;
-        
-        // Build stream settings
-        QJsonObject streamSettings;
-        QString network = QString::fromStdString(profile.getNetwork().empty() ? "tcp" : profile.getNetwork());
-        streamSettings["network"] = network;
-        
-        QString security = QString::fromStdString(profile.getSecurity());
-        if (!security.isEmpty() && security != "none")
-        {
-            streamSettings["security"] = security;
-            
-            if (security == "tls")
-            {
-                QJsonObject tlsSettings;
-                QString sni = QString::fromStdString(profile.getSni());
-                if (!sni.isEmpty())
-                {
-                    tlsSettings["serverName"] = sni;
-                }
-                tlsSettings["allowInsecure"] = profile.getAllowInsecure();
-                
-                QString alpn = QString::fromStdString(profile.getAlpn());
-                if (!alpn.isEmpty())
-                {
-                    QJsonArray alpnArray;
-                    alpnArray.append(alpn);
-                    tlsSettings["alpn"] = alpnArray;
-                }
-                
-                QString fingerprint = QString::fromStdString(profile.getFingerprint());
-                if (!fingerprint.isEmpty())
-                {
-                    tlsSettings["fingerprint"] = fingerprint;
-                }
-                else
-                {
-                    tlsSettings["fingerprint"] = "random";
-                }
-                
-                streamSettings["tlsSettings"] = tlsSettings;
-            }
-            else if (security == "reality")
-            {
-                QJsonObject realitySettings;
-                QString sni = QString::fromStdString(profile.getSni());
-                if (!sni.isEmpty())
-                {
-                    realitySettings["serverName"] = sni;
-                }
-                
-                QString fingerprint = QString::fromStdString(profile.getFingerprint());
-                if (!fingerprint.isEmpty())
-                {
-                    realitySettings["fingerprint"] = fingerprint;
-                }
-                
-                // Save Reality-specific fields
-                QString publicKey = QString::fromStdString(profile.getPublicKey());
-                if (!publicKey.isEmpty())
-                {
-                    realitySettings["publicKey"] = publicKey;
-                }
-                
-                QString shortId = QString::fromStdString(profile.getShortId());
-                if (!shortId.isEmpty())
-                {
-                    realitySettings["shortId"] = shortId;
-                }
-                
-                QString spiderX = QString::fromStdString(profile.getSpiderX());
-                if (!spiderX.isEmpty())
-                {
-                    realitySettings["spiderX"] = spiderX;
-                }
-                
-                streamSettings["realitySettings"] = realitySettings;
-            }
-        }
-        
-        outbound["streamSettings"] = streamSettings;
-        
-        // Mux settings (disabled by default)
-        QJsonObject mux;
-        mux["enabled"] = false;
-        mux["concurrency"] = -1;
-        outbound["mux"] = mux;
-        
-        outbounds.append(outbound);
-    }
-    
-    // Add direct and block outbounds if not present
-    bool hasDirect = false;
-    bool hasBlock = false;
-    for (const QJsonValue& ob : outbounds)
-    {
-        QString tag = ob.toObject()["tag"].toString();
-        if (tag == "direct") hasDirect = true;
-        if (tag == "block") hasBlock = true;
-    }
-    
-    if (!hasDirect)
-    {
-        QJsonObject directOutbound;
-        directOutbound["tag"] = "direct";
-        directOutbound["protocol"] = "freedom";
-        directOutbound["settings"] = QJsonObject();
-        outbounds.append(directOutbound);
-    }
-    
-    if (!hasBlock)
-    {
-        QJsonObject blockOutbound;
-        blockOutbound["tag"] = "block";
-        blockOutbound["protocol"] = "blackhole";
-        blockOutbound["settings"] = QJsonObject();
-        outbounds.append(blockOutbound);
-    }
-    
-    root["outbounds"] = outbounds;
-    
-    // Ensure required top-level fields exist
-    if (!root.contains("log"))
-    {
-        QJsonObject log;
-        log["loglevel"] = "warning";
-        root["log"] = log;
-    }
-    
-    if (!root.contains("inbounds"))
-    {
-        QJsonArray inbounds;
-        QJsonObject inbound;
-        inbound["tag"] = "socks-inbound";
-        inbound["protocol"] = "socks";
-        inbound["listen"] = "127.0.0.1";
-        inbound["port"] = AppConfig::instance().getLocalPort();
-        
-        QJsonObject socksSettings;
-        socksSettings["auth"] = "noauth";
-        socksSettings["udp"] = true;
-        inbound["settings"] = socksSettings;
-        
-        inbounds.append(inbound);
-        root["inbounds"] = inbounds;
-    }
-    
-    if (!root.contains("routing"))
-    {
-        QJsonObject routing;
-        routing["domainStrategy"] = "IPIfNonMatch";
-        routing["mode"] = "proxy";
-        
-        QJsonArray rules;
-        QJsonObject rule;
-        rule["type"] = "field";
-        rule["outboundTag"] = "direct";
-        
-        QJsonArray domain;
-        domain.append("geosite:cn");
-        rule["domain"] = domain;
-        
-        QJsonArray ip;
-        ip.append("geoip:private");
-        ip.append("geoip:cn");
-        rule["ip"] = ip;
-        
-        rules.append(rule);
-        routing["rules"] = rules;
-        
-        root["routing"] = routing;
-    }
-    
-    // Write updated config
-    QJsonDocument doc(root);
-    QFile file(configFile);
-    if (!file.open(QIODevice::WriteOnly))
-    {
-        qWarning() << "Failed to open config.json for writing:" << configFile;
-        return;
-    }
-    
-    file.write(doc.toJson(QJsonDocument::Indented));
-    file.close();
-    
-    qDebug() << "Saved" << m_serverProfiles.size() << "servers to config.json";
 }
+
 
 // ==================== Slot Implementations ====================
 
@@ -1271,16 +606,12 @@ void v2raycpp::onStartClicked()
         return;
     }
     m_currentProfile = m_serverProfiles[0];
-    
-    // Generate core config
-    if (!generateCoreConfig(m_currentProfile))
-    {
+
+    QString configPath = AppConfig::instance().getCoreConfigPath();
+    if (!ConfigGenerator::writeStartupCoreConfig(m_currentProfile, configPath)) {
         QMessageBox::critical(this, "Error", "Failed to generate config");
         return;
     }
-    
-    // Get config file path
-    QString configPath = AppConfig::instance().getCoreConfigPath();
     
     // Start core
     if (m_coreManager->startCore(configPath))
@@ -1350,28 +681,16 @@ void v2raycpp::onImportClicked()
         return;
     }
 
-    // Try to parse the URL
     ProfileItem profile;
-    if (parseProfileFromUrl(text, profile))
-    {
-        // Add to list
+    const auto pr = ProfileManager::tryParseProfileFromUrl(text, profile);
+    if (pr == ProfileManager::UrlParseResult::Ok) {
         m_serverProfiles.push_back(profile);
         addServerToList(profile);
-
-        // 选中新加入的 profile（不再调用 m_serverGrid）
         m_currentProfile = m_serverProfiles.back();
         updateStatusBar();
-
-        // 如果使用新的 grid，可以选中最后一个项（占位）
-        //if (m_serverGrid) {
-            // TODO: 如果 ServerGridWidget 支持选择，调用相应方法选中最后一个项
-            // e.g. m_serverGrid->selectIndex(static_cast<int>(m_serverProfiles.size()) - 1);
-        //}
-
-        // statusBar()->showMessage() removed - using statusLabel instead
-    }
-    else
-    {
+    } else if (pr == ProfileManager::UrlParseResult::UnsupportedProtocol) {
+        QMessageBox::information(this, "Info", "VMess/VLESS URL import is not supported yet");
+    } else {
         QMessageBox::warning(this, "Warning", "Failed to parse URL");
     }
 }
@@ -1395,18 +714,6 @@ void v2raycpp::onEditServerClicked()
     // TODO: implement with grid
     QMessageBox::information(this, "Info", "Use grid to select server");
 }
-
-
-// onCustomContextMenu removed
-void v2raycpp::onCustomContextMenu(const QPoint&) { }
-
-
-// onServerDoubleClicked removed
-void v2raycpp::onServerDoubleClicked() { }
-
-
-// onServerSelected removed  
-void v2raycpp::onServerSelected(int) { }
 
 
 void v2raycpp::onLogOutput(const QString& log)
@@ -1552,24 +859,6 @@ void v2raycpp::onDisableSystemProxy()
 {
     m_sysProxyHandler->clearProxy();
     // statusBar()->showMessage() removed - using statusLabel instead
-}
-
-// ==================== Latency Test Functions ====================
-
-void v2raycpp::testLatency(const QString& address, int port)
-{
-    QElapsedTimer timer;
-    timer.start();
-    
-    QTcpSocket socket;
-    socket.connectToHost(address, port);
-    
-    if (socket.waitForConnected(3000)) {
-        int latency = timer.elapsed();
-        qDebug() << "Latency test result:" << address << ":" << port << "-" << latency << "ms";
-    } else {
-        qDebug() << "Latency test failed:" << address << ":" << port;
-    }
 }
 
 void v2raycpp::onRefreshLatencyClicked()
@@ -1785,86 +1074,48 @@ void v2raycpp::syncServerCardSelectionWithCurrentProfile()
 
 void v2raycpp::startCardServerProbe(SimpleCard* card, int serverIndex)
 {
-    if (!card || !m_geoNetwork || serverIndex < 0 || serverIndex >= static_cast<int>(m_serverProfiles.size()))
+    if (!card || !m_serverProbe || serverIndex < 0 || serverIndex >= static_cast<int>(m_serverProfiles.size())) {
         return;
+    }
 
     const ProfileItem& pr = m_serverProfiles[static_cast<size_t>(serverIndex)];
     const QString host = QString::fromStdString(pr.getAddress());
     const int port = pr.getPort();
-    if (host.isEmpty() || port <= 0)
+    if (host.isEmpty() || port <= 0) {
         return;
+    }
 
-    QPointer<SimpleCard> safeCard(card);
     card->setLatencyValue(kLatencyProbePending);
     card->setLocationInfo(QStringLiteral("定位中…"), QString());
+    m_serverProbe->startProbe(serverIndex, host, port);
+}
 
-    auto* watcher = new QFutureWatcher<int>(this);
-    connect(watcher, &QFutureWatcher<int>::finished, this, [this, safeCard, serverIndex, host, watcher]() {
-        const int latency = watcher->result();
-        watcher->deleteLater();
-        if (!safeCard)
-            return;
+void v2raycpp::onProbeLatency(int serverIndex, int latencyMs)
+{
+    if (serverIndex >= 0 && serverIndex < static_cast<int>(m_serverProfiles.size())) {
+        m_serverProfiles[static_cast<size_t>(serverIndex)].setLatency(latencyMs);
+    }
+    if (serverIndex >= 0 && serverIndex < m_serverCards.size()) {
+        if (SimpleCard* c = m_serverCards[serverIndex].data()) {
+            c->setLatencyValue(latencyMs);
+        }
+    }
+}
 
-        if (serverIndex >= 0 && serverIndex < static_cast<int>(m_serverProfiles.size()))
-            m_serverProfiles[static_cast<size_t>(serverIndex)].setLatency(latency);
-        safeCard->setLatencyValue(latency);
-
-        const QByteArray enc = QUrl::toPercentEncoding(host);
-        const QUrl url(QStringLiteral("http://ip-api.com/json/%1?fields=status,message,country,countryCode,query")
-                           .arg(QString::fromUtf8(enc)));
-        QNetworkRequest req(url);
-        req.setHeader(QNetworkRequest::UserAgentHeader,
-                      QStringLiteral("Mozilla/5.0 (compatible; V2rayCpp/1.0)"));
-        QNetworkReply* reply = m_geoNetwork->get(req);
-        connect(reply, &QNetworkReply::finished, this, [this, safeCard, serverIndex, reply]() {
-            reply->deleteLater();
-            if (!safeCard)
-                return;
-
-            QString countryLine;
-            QString ipLine;
-            if (reply->error() != QNetworkReply::NoError) {
-                safeCard->setLocationInfo(QStringLiteral("未知"), QString());
-                return;
-            }
-
-            const QJsonDocument doc = QJsonDocument::fromJson(reply->readAll());
-            if (!doc.isObject()) {
-                safeCard->setLocationInfo(QStringLiteral("未知"), QString());
-                return;
-            }
-
-            const QJsonObject o = doc.object();
-            if (o.value(QStringLiteral("status")).toString() != QStringLiteral("success")) {
-                const QString msg = o.value(QStringLiteral("message")).toString();
-                if (!msg.isEmpty())
-                    safeCard->setLocationInfo(msg, QString());
-                else
-                    safeCard->setLocationInfo(QStringLiteral("未知"), QString());
-                return;
-            }
-
-            const QString cty = o.value(QStringLiteral("country")).toString();
-            const QString code = o.value(QStringLiteral("countryCode")).toString();
-            const QString q = o.value(QStringLiteral("query")).toString();
-            if (!cty.isEmpty()) {
-                countryLine = code.isEmpty() ? cty : QStringLiteral("%1 (%2)").arg(cty, code);
-            }
-            ipLine = q;
-            if (serverIndex >= 0 && serverIndex < static_cast<int>(m_serverProfiles.size())) {
-                m_serverProfiles[static_cast<size_t>(serverIndex)].setCountry(cty.toStdString());
-                m_serverProfiles[static_cast<size_t>(serverIndex)].setCountryCode(code.toStdString());
-            }
-            if (countryLine.isEmpty())
-                countryLine = QStringLiteral("未知");
-            safeCard->setLocationInfo(countryLine, ipLine);
-        });
-    });
-
-    QFuture<int> fut = QtConcurrent::run([host, port]() {
-        return tcpConnectLatencyMs(host, port);
-    });
-    watcher->setFuture(fut);
+void v2raycpp::onProbeGeo(int serverIndex, const QString& primaryLine, const QString& secondaryLine,
+                          const QString& country, const QString& countryCode)
+{
+    if (serverIndex >= 0 && serverIndex < static_cast<int>(m_serverProfiles.size())) {
+        if (!country.isEmpty()) {
+            m_serverProfiles[static_cast<size_t>(serverIndex)].setCountry(country.toStdString());
+            m_serverProfiles[static_cast<size_t>(serverIndex)].setCountryCode(countryCode.toStdString());
+        }
+    }
+    if (serverIndex >= 0 && serverIndex < m_serverCards.size()) {
+        if (SimpleCard* c = m_serverCards[serverIndex].data()) {
+            c->setLocationInfo(primaryLine, secondaryLine);
+        }
+    }
 }
 
 ProfileItem v2raycpp::getSelectedProfile() const
@@ -1874,156 +1125,33 @@ ProfileItem v2raycpp::getSelectedProfile() const
 }
 
 
-bool v2raycpp::parseProfileFromUrl(const QString& url, ProfileItem& profile)
-{
-    // Try to parse as Trojan URL
-    if (url.startsWith("trojan://"))
-    {
-        auto parsed = TrojanFmt::parse(url.toStdString());
-        if (parsed)
-        {
-            profile = *parsed;
-            return true;
-        }
-    }
-    
-    // Try to parse as VMess URL (simple check)
-    if (url.startsWith("vmess://"))
-    {
-        // TODO: Implement VMess URL parsing
-        QMessageBox::information(this, "Info", "VMess not supported yet");
-        return false;
-    }
-    
-    // Try to parse as VLESS URL
-    if (url.startsWith("vless://"))
-    {
-        // TODO: Implement VLESS URL parsing
-        QMessageBox::information(this, "Info", "VLESS not supported yet");
-        return false;
-    }
-    
-    return false;
-}
 
-// ==================== Traffic Statistics ====================
 
 void v2raycpp::startStatsTimer()
 {
-    // Reset counters
-    m_bytesReceived = 0;
-    m_bytesSent = 0;
-    m_lastBytesReceived = 0;
-    m_lastBytesSent = 0;
-    
-    // Create timer if not exists
-    if (!m_statsTimer)
-    {
-        m_statsTimer = new QTimer(this);
-        connect(m_statsTimer, &QTimer::timeout, this, &v2raycpp::updateStats);
+    if (m_trafficStats) {
+        m_trafficStats->start();
     }
-    
-    // Start timer with 1 second interval
-    m_statsTimer->start(1000);
 }
 
 void v2raycpp::stopStatsTimer()
 {
-    // Stop timer
-    if (m_statsTimer)
-    {
-        m_statsTimer->stop();
+    if (m_trafficStats) {
+        m_trafficStats->stop();
     }
-    
-    // Reset display
-    if (ui.statSpeedDown)
-    {
-        ui.statSpeedDown->setText("0 KB/s");
-    }
-    if (ui.statSpeedUp)
-    {
-        ui.statSpeedUp->setText("0 KB/s");
-    }
-
-}
-
-void v2raycpp::updateStats()
-{
-    // Simple implementation: generate random speed for demonstration
-    // In production, you would get actual network statistics from system APIs
-    
-    // Simulate some traffic (replace with actual implementation)
-    static int tick = 0;
-    tick++;
-    
-    // Generate pseudo-random speed values for demo
-    // Download: 100KB/s - 5MB/s
-    qint64 downloadSpeed = (100 + (tick * 37) % 5000) * 1024;
-    // Upload: 50KB/s - 1MB/s
-    qint64 uploadSpeed = (50 + (tick * 23) % 1000) * 1024;
-    
-    // Format download speed
-    QString downloadStr;
-    if (downloadSpeed >= 1024 * 1024)
-    {
-        downloadStr = QString("%1 MB/s").arg(downloadSpeed / (1024.0 * 1024.0), 0, 'f', 1);
-    }
-    else
-    {
-        downloadStr = QString("%1 KB/s").arg(downloadSpeed / 1024.0, 0, 'f', 1);
-    }
-    
-    // Format upload speed
-    QString uploadStr;
-    if (uploadSpeed >= 1024 * 1024)
-    {
-        uploadStr = QString("%1 MB/s").arg(uploadSpeed / (1024.0 * 1024.0), 0, 'f', 1);
-    }
-    else
-    {
-        uploadStr = QString("%1 KB/s").arg(uploadSpeed / 1024.0, 0, 'f', 1);
-    }
-    
-    // Update UI labels
-    if (ui.statSpeedDown)
-    {
-        ui.statSpeedDown->setText(downloadStr);
-    }
-    if (ui.statSpeedUp)
-    {
-        ui.statSpeedUp->setText(uploadStr);
-    }
-
-    if (ui.statUptime) {
-        ui.statUptime->setText(formatFooterUptime(m_startTime, m_currentStatus));
-    }
-
 }
 
 void v2raycpp::startReconnectTimer()
 {
-    if (!m_reconnectTimer) {
-        m_reconnectTimer = new QTimer(this);
-        connect(m_reconnectTimer, &QTimer::timeout, this, &v2raycpp::onReconnectTimeout);
+    if (m_reconnectController) {
+        m_reconnectController->arm(5000);
     }
-    // 5秒后重连
-    m_reconnectTimer->start(5000);
 }
 
 void v2raycpp::stopReconnectTimer()
 {
-    if (m_reconnectTimer) {
-        m_reconnectTimer->stop();
-    }
-}
-
-void v2raycpp::onReconnectTimeout()
-{
-    stopReconnectTimer();
-    
-    if (m_currentProfile.isValid()) {
-        qDebug() << "Auto reconnecting...";
-        onStartClicked();
+    if (m_reconnectController) {
+        m_reconnectController->disarm();
     }
 }
 

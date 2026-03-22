@@ -103,6 +103,21 @@
     <ClCompile Include="src\ProfileManager.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\XrayConfigStore.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\TcpLatency.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ServerCardProbeService.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ReconnectController.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\TrafficStatsController.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\ProfileItem.h">
@@ -144,6 +159,21 @@
     <ClInclude Include="include\ProfileManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="include\XrayConfigStore.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\TcpLatency.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <QtMoc Include="include\ServerCardProbeService.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
+    <QtMoc Include="include\ReconnectController.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
+    <QtMoc Include="include\TrafficStatsController.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
   </ItemGroup>
   <ItemGroup>
     <QtMoc Include="include\CoreManager.h">

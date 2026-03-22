@@ -7,7 +7,6 @@
 #include <QCoreApplication>
 #include <QStandardPaths>
 #include <QDir>
-#include <ProfileItem.h>
 
 /// <summary>
 /// 系统代理类型枚举（用于系统代理设置）
@@ -150,15 +149,6 @@ public:
     void setDefUserAgent(const std::string& ua) { m_coreBasic.defUserAgent = ua; }
     std::string getDefUserAgent() const { return m_coreBasic.defUserAgent; }
     
-    // ============ Server Profiles ============
-    void addServerProfile(const ProfileItem& profile) { m_serverProfiles.push_back(profile); }
-    void clearServerProfiles() { m_serverProfiles.clear(); }
-    const std::vector<ProfileItem>& getServerProfiles() const { return m_serverProfiles; }
-    std::vector<ProfileItem> getServerProfiles() { return m_serverProfiles; }
-    
-    void loadServerProfiles();
-    void saveServerProfiles();
-
     // ============ InboundItem 配置 ============
     
     void setLocalPort(int port) { m_inbound.localPort = port; }
@@ -263,7 +253,4 @@ public:
 private:
     AppConfig();
     ~AppConfig() = default;
-
-
-    std::vector<ProfileItem> m_serverProfiles;
 };

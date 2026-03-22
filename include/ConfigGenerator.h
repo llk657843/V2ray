@@ -1,10 +1,17 @@
-﻿#pragma once
+#pragma once
 
 #include <QString>
 #include <QJsonArray>
 #include <QJsonObject>
 #include "ProfileItem.h"
 #include "Routing.h"
+
+/// 客户端 JSON 构建策略：完整（入站+DNS+路由规则）或主窗口启动核心（单 SOCKS、无 DNS、固定广告域路由）
+enum class ConfigBuildKind
+{
+    Full,
+    CoreLaunch
+};
 
 /**
  * @brief 配置生成器
@@ -25,12 +32,11 @@ public:
     static QString generateClientConfig(const ProfileItem& node, const QString& routingMode = "rule");
 
     /**
-     * @brief 从 ProfileItem 对象生成 V2Ray 客户端配置 JSON（重载）
-     * @param node 配置文件节点
-     * @param mode 路由模式枚举
-     * @return QString JSON 形式的配置文件字符串
+     * @brief 从 ProfileItem 对象生成 V2Ray 客户端配置 JSON
+     * @param buildKind Full：SOCKS+HTTP、DNS、Routing::genRouting；CoreLaunch：单 SOCKS、无 DNS、广告域路由；Trojan+TLS 出站与历史启动逻辑一致
      */
-    static QString generateClientConfig(const ProfileItem& node, ERoutingMode mode);
+    static QString generateClientConfig(const ProfileItem& node, ERoutingMode mode,
+                                        ConfigBuildKind buildKind = ConfigBuildKind::Full);
 
     /**
      * @brief 生成配置并写入文件
@@ -39,6 +45,9 @@ public:
      * @return bool 是否成功
      */
     static bool generateAndWriteConfig(const ProfileItem& node, const QString& filePath);
+
+    /// 等价于 generateClientConfig(..., CoreLaunch) 写入文件
+    static bool writeStartupCoreConfig(const ProfileItem& profile, const QString& filePath);
 
 private:
     /// <summary>
@@ -49,7 +58,12 @@ private:
     /// <summary>
     /// 生成出站配置（Trojan + Direct + Block + DNS）
     /// </summary>
-    static QJsonArray genOutbounds(const ProfileItem& node);
+    static QJsonArray genOutbounds(const ProfileItem& node, ConfigBuildKind buildKind);
+
+    static QJsonArray genInboundsCoreLaunch();
+    static QJsonObject genRoutingCoreLaunch();
+    static QJsonObject buildProxyOutboundStandard(const ProfileItem& node);
+    static QJsonObject buildTrojanProxyOutboundCoreLaunch(const ProfileItem& node);
 
     /// <summary>
     /// 生成路由规则

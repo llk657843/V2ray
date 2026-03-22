@@ -111,7 +111,12 @@
     <QtMoc Include="ServerGridWidget.h" />
     <QtMoc Include="ServerCardWidget.h" />
     <QtMoc Include="include\XrayApiClient.h" />
+    <QtMoc Include="include\ServerCardProbeService.h" />
+    <QtMoc Include="include\ReconnectController.h" />
+    <QtMoc Include="include\TrafficStatsController.h" />
     <ClInclude Include="include\ProfileManager.h" />
+    <ClInclude Include="include\XrayConfigStore.h" />
+    <ClInclude Include="include\TcpLatency.h" />
     <ClInclude Include="include\ServerGridWidget.h" />
     <ClInclude Include="include\V2rayConfig.h" />
     <QtRcc Include="v2raycpp.qrc" />
@@ -133,6 +138,11 @@
     <ClCompile Include="SimpleCard.cpp" />
     <ClCompile Include="src\Logger.cpp" />
     <ClCompile Include="src\ProfileManager.cpp" />
+    <ClCompile Include="src\XrayConfigStore.cpp" />
+    <ClCompile Include="src\TcpLatency.cpp" />
+    <ClCompile Include="src\ServerCardProbeService.cpp" />
+    <ClCompile Include="src\ReconnectController.cpp" />
+    <ClCompile Include="src\TrafficStatsController.cpp" />
     <ClCompile Include="src\TrayIcon.cpp" />
     <ClCompile Include="v2raycpp.cpp" />
     <ClCompile Include="main.cpp" />

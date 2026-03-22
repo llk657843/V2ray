@@ -190,8 +190,6 @@ void AppConfig::load()
     
     if (json.contains("corePath")) m_corePath = json["corePath"].toString();
     if (json.contains("coreConfigPath")) m_coreConfigPath = json["coreConfigPath"].toString();
-
-    loadServerProfiles();
 }
 
 void AppConfig::save()
@@ -212,78 +210,6 @@ void AppConfig::save()
     json["coreConfigPath"] = m_coreConfigPath;
     
     file.write(QJsonDocument(json).toJson());
-    file.close();
-
-    saveServerProfiles();
-}
-
-void AppConfig::loadServerProfiles()
-{
-    QString serversFile = getConfigPath() + "/servers.json";
-    QFile file(serversFile);
-    if (!file.open(QIODevice::ReadOnly)) return;
-    
-    QJsonDocument doc = QJsonDocument::fromJson(file.readAll());
-    file.close();
-    
-    if (doc.isNull() || !doc.isObject()) return;
-    
-    m_serverProfiles.clear();
-    QJsonArray servers = doc.object()["servers"].toArray();
-    for (const auto& serverVal : servers)
-    {
-        QJsonObject obj = serverVal.toObject();
-        ProfileItem profile;
-        profile.setAddress(obj["address"].toString().toStdString());
-        profile.setPort(obj["port"].toInt());
-        profile.setRemark(obj["remark"].toString().toStdString());
-        profile.setPassword(obj["password"].toString().toStdString());
-        profile.setSni(obj["sni"].toString().toStdString());
-        profile.setNetwork(obj["network"].toString().toStdString());
-        profile.setSecurity(obj["security"].toString().toStdString());
-        profile.setFingerprint(obj["fingerprint"].toString().toStdString());
-        profile.setAllowInsecure(obj["allowInsecure"].toBool());
-        profile.setUserId(obj["userId"].toString().toStdString());
-        profile.setAlterId(obj["alterId"].toString().toStdString());
-        
-        QString type = obj["configType"].toString();
-        if (type == "VMess") profile.setConfigType(EConfigType::VMess);
-        else if (type == "VLESS") profile.setConfigType(EConfigType::VLESS);
-        else if (type == "Trojan") profile.setConfigType(EConfigType::Trojan);
-        else if (type == "Shadowsocks") profile.setConfigType(EConfigType::Shadowsocks);
-        
-        if (profile.isValid()) m_serverProfiles.push_back(profile);
-    }
-}
-
-void AppConfig::saveServerProfiles()
-{
-    QString serversFile = getConfigPath() + "/servers.json";
-    QFile file(serversFile);
-    if (!file.open(QIODevice::WriteOnly)) return;
-    
-    QJsonArray servers;
-    for (const auto& profile : m_serverProfiles)
-    {
-        QJsonObject obj;
-        obj["address"] = QString::fromStdString(profile.getAddress());
-        obj["port"] = profile.getPort();
-        obj["remark"] = QString::fromStdString(profile.getRemark());
-        obj["password"] = QString::fromStdString(profile.getPassword());
-        obj["sni"] = QString::fromStdString(profile.getSni());
-        obj["network"] = QString::fromStdString(profile.getNetwork());
-        obj["security"] = QString::fromStdString(profile.getSecurity());
-        obj["fingerprint"] = QString::fromStdString(profile.getFingerprint());
-        obj["allowInsecure"] = profile.getAllowInsecure();
-        obj["userId"] = QString::fromStdString(profile.getUserId());
-        obj["alterId"] = QString::fromStdString(profile.getAlterId());
-        obj["configType"] = QString::fromStdString(profile.getConfigTypeString());
-        servers.append(obj);
-    }
-    
-    QJsonObject root;
-    root["servers"] = servers;
-    file.write(QJsonDocument(root).toJson());
     file.close();
 }
 
