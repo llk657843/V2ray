@@ -1,6 +1,7 @@
 #include "v2raycpp.h"
 #include "login\LoginMainWidget.h"
 #include <QtWidgets/QApplication>
+#include <memory>
 #include <QFile>
 #include <QTextStream>
 #include <QDateTime>
@@ -49,17 +50,22 @@ int main(int argc, char *argv[])
     }
 
 
-    // Create login widget and show it first
-    LoginMainWidget LoginMainWidget;
-    LoginMainWidget.show();
+    std::unique_ptr<v2raycpp> mainWindow;
 
-    // When login succeeds, hide login and show main window
-    QObject::connect(&LoginMainWidget, &LoginMainWidget::loginSuccess, [&]() {
-        LoginMainWidget.hide();
+    LoginMainWidget loginMainWidget;
+    loginMainWidget.show();
+
+    QObject::connect(&loginMainWidget, &LoginMainWidget::loginSuccess, [&]() {
+        loginMainWidget.hide();
+        if (!mainWindow) {
+            mainWindow = std::make_unique<v2raycpp>();
+        }
+        mainWindow->show();
+        mainWindow->raise();
+        mainWindow->activateWindow();
     });
 
-    // When login is closed (user clicks X), exit app
-    QObject::connect(&LoginMainWidget, &LoginMainWidget::loginClose, [&]() {
+    QObject::connect(&loginMainWidget, &LoginMainWidget::loginClose, [&]() {
         QApplication::quit();
     });
 

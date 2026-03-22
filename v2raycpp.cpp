@@ -3,12 +3,15 @@
 #include <QIcon>
 #include <QSize>
 #include <QPixmap>
+#include <QPainter>
 #include "TrayIcon.h"
 #include "TrojanFmt.h"
 #include <QFileDialog>
 #include <QDateTime>
 #include <QTextEdit>
 #include <QPushButton>
+#include <QAbstractButton>
+#include <QButtonGroup>
 #include <QJsonDocument>
 #include <QJsonArray>
 #include <QJsonObject>
@@ -20,8 +23,15 @@
 #include <QShortcut>
 #include <Qt>
 #include <QtNetwork/QTcpSocket>
+#include <QtNetwork/QNetworkAccessManager>
+#include <QtNetwork/QNetworkReply>
+#include <QtNetwork/QNetworkRequest>
 #include <QElapsedTimer>
 #include <QThread>
+#include <QtConcurrent/QtConcurrentRun>
+#include <QFutureWatcher>
+#include <QPointer>
+#include <QUrl>
 
 #include <QVBoxLayout>
 #include <QLabel>
@@ -30,6 +40,85 @@
 #include <QFrame>
 #include <QGridLayout>
 #include "SimpleCard.h"
+#include "FooterBarIcons.h"
+
+namespace {
+QString protocolSearchKeyword(EConfigType t)
+{
+    switch (t) {
+    case EConfigType::VMess:
+        return QStringLiteral("vmess");
+    case EConfigType::VLESS:
+        return QStringLiteral("vless");
+    case EConfigType::Trojan:
+        return QStringLiteral("trojan");
+    case EConfigType::Shadowsocks:
+        return QStringLiteral("shadowsocks");
+    default:
+        return QStringLiteral("other");
+    }
+}
+
+QString formatFooterUptime(const QDateTime& started, CoreStatus status)
+{
+    if (status != CoreStatus::Running || !started.isValid()) {
+        return QStringLiteral("UPTIME: --");
+    }
+    const qint64 secs = qMax(qint64(0), started.secsTo(QDateTime::currentDateTime()));
+    const qint64 h = secs / 3600;
+    const int m = static_cast<int>((secs % 3600) / 60);
+    const int s = static_cast<int>(secs % 60);
+    const QString hp = (h < 10) ? QStringLiteral("0%1").arg(h) : QString::number(h);
+    return QStringLiteral("UPTIME: %1:%2:%3")
+        .arg(hp)
+        .arg(m, 2, 10, QLatin1Char('0'))
+        .arg(s, 2, 10, QLatin1Char('0'));
+}
+
+constexpr int kLatencyProbePending = -2;
+constexpr int kSidebarNavIconPx = 20;
+constexpr int kSidebarNavIconTrailingPad = 8;
+
+QIcon makeSidebarNavIcon(const QString& imagePath, int iconPx, int trailingGapPx)
+{
+    QPixmap pm(imagePath);
+    if (pm.isNull())
+        return QIcon(imagePath);
+    const int w = iconPx + qMax(0, trailingGapPx);
+    const int h = iconPx;
+    QPixmap canvas(w, h);
+    canvas.fill(Qt::transparent);
+    QPainter painter(&canvas);
+    painter.setRenderHint(QPainter::SmoothPixmapTransform);
+    const QPixmap scaled = pm.scaled(iconPx, iconPx, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+    painter.drawPixmap(0, 0, scaled);
+    return QIcon(canvas);
+}
+
+int tcpConnectLatencyMs(const QString& host, int port)
+{
+    QElapsedTimer timer;
+    timer.start();
+    QTcpSocket socket;
+    socket.connectToHost(host, port);
+    if (socket.waitForConnected(3000))
+        return static_cast<int>(timer.elapsed());
+    return -1;
+}
+
+void applyLabelIcon(QLabel* label, const QString& qrcPath, int px)
+{
+    if (!label) {
+        return;
+    }
+    QPixmap pm(qrcPath);
+    if (pm.isNull()) {
+        return;
+    }
+    label->setPixmap(pm.scaled(px, px, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+    label->setScaledContents(false);
+}
+} // namespace
 
 v2raycpp::v2raycpp(QWidget *parent)
     : QWidget(parent)
@@ -79,6 +168,8 @@ v2raycpp::v2raycpp(QWidget *parent)
     m_trayIcon = std::make_unique<TrayIcon>(this);
     m_trayIcon->init();
     m_trayIcon->show();
+
+    m_geoNetwork = new QNetworkAccessManager(this);
     
     // Initialize UI (styles come from QApplication stylesheet in main.cpp)
     initUI();
@@ -189,7 +280,7 @@ void v2raycpp::initServerGrid()
 void v2raycpp::initUI()
 {
     // Set window title
-    setWindowTitle("v2raycpp");
+    setWindowTitle(QStringLiteral("XProxy"));
     
     // Load PNG icons from images/figma directory (relative to exe)
     QString iconPath = QCoreApplication::applicationDirPath() + "/../../images/figma/";
@@ -224,32 +315,54 @@ void v2raycpp::initUI()
     auto loadIcon = [iconPath](const QString& name) {
         return QIcon(iconPath + name + ".png");
     };
+    auto loadNavIcon = [iconPath](const QString& name) -> QIcon {
+        const QString diskPath = iconPath + name + QStringLiteral(".png");
+        QIcon icon = makeSidebarNavIcon(diskPath, kSidebarNavIconPx, kSidebarNavIconTrailingPad);
+        if (!icon.isNull())
+            return icon;
+        const QString qrcPath = QStringLiteral(":/images/figma/%1.png").arg(name);
+        return makeSidebarNavIcon(qrcPath, kSidebarNavIconPx, kSidebarNavIconTrailingPad);
+    };
+
+    if (ui.searchIcon && ui.searchIcon->parentWidget()) {
+        ui.searchIcon->parentWidget()->setAttribute(Qt::WA_StyledBackground, true);
+    }
+    constexpr int kSearchIconPx = 12;
+    applyLabelIcon(ui.searchIcon, QStringLiteral(":/images/figma/icon_search.png"), kSearchIconPx);
+
+    constexpr int kBarIconPx = 14;
+    applyLabelIcon(ui.statConnIcon, FooterBarIcons::connection(), kBarIconPx);
+    applyLabelIcon(ui.statSpeedUpIcon, FooterBarIcons::uploadSpeed(), kBarIconPx);
+    applyLabelIcon(ui.statSpeedDownIcon, FooterBarIcons::downloadSpeed(), kBarIconPx);
+    applyLabelIcon(ui.statIPIcon, FooterBarIcons::globeIp(), kBarIconPx);
+    applyLabelIcon(ui.statUptimeIcon, FooterBarIcons::clockUptime(), kBarIconPx);
     
     // Sidebar navigation icons
+    const QSize navIconSize(kSidebarNavIconPx + kSidebarNavIconTrailingPad, kSidebarNavIconPx);
     if (ui.navHome) {
-        ui.navHome->setText("Home");
-        ui.navHome->setIcon(loadIcon("nav_home"));
-        ui.navHome->setIconSize(QSize(20, 20));
+        ui.navHome->setText(QStringLiteral("首页"));
+        ui.navHome->setIcon(loadNavIcon(QStringLiteral("nav_home")));
+        ui.navHome->setIconSize(navIconSize);
     }
     if (ui.navServers) {
-        ui.navServers->setText("Servers");
-        ui.navServers->setIcon(loadIcon("nav_servers"));
-        ui.navServers->setIconSize(QSize(20, 20));
+        ui.navServers->setText(QStringLiteral("服务器"));
+        ui.navServers->setIcon(loadNavIcon(QStringLiteral("nav_servers")));
+        ui.navServers->setIconSize(navIconSize);
     }
     if (ui.navSettings) {
-        ui.navSettings->setText("Settings");
-        ui.navSettings->setIcon(loadIcon("nav_settings_1"));
-        ui.navSettings->setIconSize(QSize(20, 20));
+        ui.navSettings->setText(QStringLiteral("设置"));
+        ui.navSettings->setIcon(loadNavIcon(QStringLiteral("nav_settings_1")));
+        ui.navSettings->setIconSize(navIconSize);
     }
     if (ui.navStats) {
-        ui.navStats->setText("Statistics");
-        ui.navStats->setIcon(loadIcon("nav_stats"));
-        ui.navStats->setIconSize(QSize(20, 20));
+        ui.navStats->setText(QStringLiteral("统计"));
+        ui.navStats->setIcon(loadNavIcon(QStringLiteral("nav_stats")));
+        ui.navStats->setIconSize(navIconSize);
     }
     if (ui.navHelp) {
-        ui.navHelp->setText("Help");
-        ui.navHelp->setIcon(loadIcon("nav_help"));
-        ui.navHelp->setIconSize(QSize(20, 20));
+        ui.navHelp->setText(QStringLiteral("帮助中心"));
+        ui.navHelp->setIcon(loadNavIcon(QStringLiteral("nav_help")));
+        ui.navHelp->setIconSize(navIconSize);
     }
     
     // Header toolbar icons
@@ -265,6 +378,11 @@ void v2raycpp::initUI()
     if (ui.btnStartProxy)
     {
         connect(ui.btnStartProxy, &QPushButton::clicked, this, &v2raycpp::onStartClicked);
+    }
+
+    if (ui.toolRefresh) {
+        ui.toolRefresh->setToolTip(QStringLiteral("刷新全部节点延迟与地区信息"));
+        connect(ui.toolRefresh, &QPushButton::clicked, this, &v2raycpp::onRefreshLatencyClicked);
     }
 
     if (ui.navSettings)
@@ -284,6 +402,24 @@ void v2raycpp::initUI()
     {
         connect(ui.searchBar, &QLineEdit::textChanged, this, &v2raycpp::onSearchTextChanged);
     }
+
+    if (ui.protocolFilterBar) {
+        ui.protocolFilterBar->setAttribute(Qt::WA_StyledBackground, true);
+    }
+
+    m_protocolFilterGroup = new QButtonGroup(this);
+    m_protocolFilterGroup->setExclusive(true);
+    if (ui.filterAll)
+        m_protocolFilterGroup->addButton(ui.filterAll);
+    if (ui.filterVmess)
+        m_protocolFilterGroup->addButton(ui.filterVmess);
+    if (ui.filterTrojan)
+        m_protocolFilterGroup->addButton(ui.filterTrojan);
+    if (ui.filterVless)
+        m_protocolFilterGroup->addButton(ui.filterVless);
+    connect(m_protocolFilterGroup, &QButtonGroup::buttonClicked, this, [this](QAbstractButton*) {
+        updateServerCardFilter();
+    });
 }
 
 void v2raycpp::initConnections()
@@ -348,11 +484,11 @@ void v2raycpp::updateUIStatus()
     {
         if (m_currentStatus == CoreStatus::Running)
         {
-            ui.btnStartProxy->setText("Stop");
+            ui.btnStartProxy->setText(QStringLiteral("停止系统代理"));
         }
         else
         {
-            ui.btnStartProxy->setText("Start");
+            ui.btnStartProxy->setText(QStringLiteral("启动系统代理"));
         }
     }
     
@@ -372,6 +508,7 @@ void v2raycpp::updateUIStatus()
             ui.statIP->setText("IP: --");
         }
     }
+
 }
 
 void v2raycpp::updateStatusBar()
@@ -394,18 +531,11 @@ void v2raycpp::updateStatusBar()
         }
     }
     
-    // Update start time label
-    if (ui.statUptime)
-    {
-        if (m_currentStatus == CoreStatus::Running && m_startTime.isValid())
-        {
-            ui.statUptime->setText("Connected: " + m_startTime.toString("HH:mm:ss"));
-        }
-        else
-        {
-            ui.statUptime->setText("Connected: --");
-        }
+    if (ui.statUptime) {
+        ui.statUptime->setText(formatFooterUptime(m_startTime, m_currentStatus));
     }
+
+    syncServerCardSelectionWithCurrentProfile();
 }
 
 bool v2raycpp::generateCoreConfig(const ProfileItem& profile)
@@ -804,6 +934,8 @@ void v2raycpp::loadConfig()
     }
     
     qDebug() << "[DEBUG] Loaded" << m_serverProfiles.size() << "valid servers from config.json";
+
+    syncServerCardSelectionWithCurrentProfile();
 }
 
 void v2raycpp::saveConfig()
@@ -1442,47 +1574,14 @@ void v2raycpp::testLatency(const QString& address, int port)
 
 void v2raycpp::onRefreshLatencyClicked()
 {
-    // Test latency for all servers in the list
-    for (int i = 0; i < m_serverProfiles.size(); ++i)
-    {
-        ProfileItem& profile = m_serverProfiles[i];
-
-        // Test TCP connection latency
-        QElapsedTimer timer;
-        timer.start();
-
-        QTcpSocket socket;
-        socket.connectToHost(QString::fromStdString(profile.getAddress()), profile.getPort());
-
-        if (socket.waitForConnected(3000)) {
-            int latency = timer.elapsed();
-            profile.setLatency(latency);
-        }
-        else {
-            profile.setLatency(-1);  // Failed to connect
-        }
-
-        // Update the list item text with latency
-        QString latencyStr;
-        if (profile.getLatency() > 0) {
-            latencyStr = QString::number(profile.getLatency()) + "ms";
-        }
-        else {
-            latencyStr = "--";
-        }
-
-        QString itemText = QString("%1 - %2:%3 - %4")
-            .arg(QString::fromStdString(profile.getRemark().empty() ?
-                profile.getAddress() : profile.getRemark()))
-            .arg(QString::fromStdString(profile.getAddress()))
-            .arg(profile.getPort())
-            .arg(latencyStr);
-
-        // Grid update handled elsewhere
+    const int n = static_cast<int>(m_serverProfiles.size());
+    for (int i = 0; i < n; ++i) {
+        if (i >= m_serverCards.size())
+            break;
+        SimpleCard* card = m_serverCards.at(i).data();
+        if (card)
+            startCardServerProbe(card, i);
     }
-
-    // Small delay between tests to avoid overwhelming
-    QThread::msleep(100);
 }
 
 // ==================== Helper Functions ====================
@@ -1552,6 +1651,12 @@ void v2raycpp::addCardToGrid(const QString& title, const QString& protocol, int 
         }
     });
 
+    if (serverIndex >= 0 && serverIndex < static_cast<int>(m_serverProfiles.size())) {
+        if (m_serverCards.size() <= serverIndex)
+            m_serverCards.resize(serverIndex + 1);
+        m_serverCards[serverIndex] = card;
+    }
+
     const int columns = 2;
     // 尝试把新卡片放入最后一行（如果最后一行有容器且未满）
     QWidget* targetContainer = nullptr;
@@ -1600,6 +1705,166 @@ void v2raycpp::addCardToGrid(const QString& title, const QString& protocol, int 
     // 更新几何与重绘，确保布局生效
     if (ui.formLayout->parentWidget()) ui.formLayout->parentWidget()->updateGeometry();
     this->update();
+
+    if (serverIndex >= 0 && serverIndex < static_cast<int>(m_serverProfiles.size()))
+        startCardServerProbe(card, serverIndex);
+
+    updateServerCardFilter();
+}
+
+void v2raycpp::updateServerCardFilter()
+{
+    const int n = static_cast<int>(m_serverProfiles.size());
+    const QString q = ui.searchBar ? ui.searchBar->text().trimmed().toLower() : QString();
+
+    auto matchesProtocol = [this](const ProfileItem& p) -> bool {
+        if (ui.filterAll && ui.filterAll->isChecked())
+            return true;
+        if (ui.filterVmess && ui.filterVmess->isChecked())
+            return p.getConfigType() == EConfigType::VMess;
+        if (ui.filterTrojan && ui.filterTrojan->isChecked())
+            return p.getConfigType() == EConfigType::Trojan;
+        if (ui.filterVless && ui.filterVless->isChecked())
+            return p.getConfigType() == EConfigType::VLESS;
+        return true;
+    };
+
+    for (int i = 0; i < n; ++i) {
+        SimpleCard* card = (i < m_serverCards.size()) ? m_serverCards.at(i).data() : nullptr;
+        if (!card)
+            continue;
+
+        const ProfileItem& pr = m_serverProfiles[static_cast<size_t>(i)];
+        if (!matchesProtocol(pr)) {
+            card->setVisible(false);
+            continue;
+        }
+
+        if (q.isEmpty()) {
+            card->setVisible(true);
+            continue;
+        }
+
+        const QString blob = QStringLiteral("%1 %2 %3")
+                                 .arg(QString::fromStdString(pr.getRemark()))
+                                 .arg(QString::fromStdString(pr.getAddress()))
+                                 .arg(protocolSearchKeyword(pr.getConfigType()))
+                                 .toLower();
+        card->setVisible(blob.contains(q));
+    }
+}
+
+void v2raycpp::applyServerCardSelection(int serverIndex)
+{
+    for (int i = 0; i < m_serverCards.size(); ++i) {
+        SimpleCard* c = m_serverCards.at(i).data();
+        if (!c)
+            continue;
+        c->setSelected(serverIndex >= 0 && i == serverIndex);
+    }
+}
+
+void v2raycpp::syncServerCardSelectionWithCurrentProfile()
+{
+    if (!m_currentProfile.isValid()) {
+        applyServerCardSelection(-1);
+        return;
+    }
+    int idx = -1;
+    for (int i = 0; i < static_cast<int>(m_serverProfiles.size()); ++i) {
+        const ProfileItem& p = m_serverProfiles[static_cast<size_t>(i)];
+        if (p.getAddress() == m_currentProfile.getAddress()
+            && p.getPort() == m_currentProfile.getPort()
+            && p.getRemark() == m_currentProfile.getRemark()) {
+            idx = i;
+            break;
+        }
+    }
+    applyServerCardSelection(idx);
+}
+
+void v2raycpp::startCardServerProbe(SimpleCard* card, int serverIndex)
+{
+    if (!card || !m_geoNetwork || serverIndex < 0 || serverIndex >= static_cast<int>(m_serverProfiles.size()))
+        return;
+
+    const ProfileItem& pr = m_serverProfiles[static_cast<size_t>(serverIndex)];
+    const QString host = QString::fromStdString(pr.getAddress());
+    const int port = pr.getPort();
+    if (host.isEmpty() || port <= 0)
+        return;
+
+    QPointer<SimpleCard> safeCard(card);
+    card->setLatencyValue(kLatencyProbePending);
+    card->setLocationInfo(QStringLiteral("定位中…"), QString());
+
+    auto* watcher = new QFutureWatcher<int>(this);
+    connect(watcher, &QFutureWatcher<int>::finished, this, [this, safeCard, serverIndex, host, watcher]() {
+        const int latency = watcher->result();
+        watcher->deleteLater();
+        if (!safeCard)
+            return;
+
+        if (serverIndex >= 0 && serverIndex < static_cast<int>(m_serverProfiles.size()))
+            m_serverProfiles[static_cast<size_t>(serverIndex)].setLatency(latency);
+        safeCard->setLatencyValue(latency);
+
+        const QByteArray enc = QUrl::toPercentEncoding(host);
+        const QUrl url(QStringLiteral("http://ip-api.com/json/%1?fields=status,message,country,countryCode,query")
+                           .arg(QString::fromUtf8(enc)));
+        QNetworkRequest req(url);
+        req.setHeader(QNetworkRequest::UserAgentHeader,
+                      QStringLiteral("Mozilla/5.0 (compatible; V2rayCpp/1.0)"));
+        QNetworkReply* reply = m_geoNetwork->get(req);
+        connect(reply, &QNetworkReply::finished, this, [this, safeCard, serverIndex, reply]() {
+            reply->deleteLater();
+            if (!safeCard)
+                return;
+
+            QString countryLine;
+            QString ipLine;
+            if (reply->error() != QNetworkReply::NoError) {
+                safeCard->setLocationInfo(QStringLiteral("未知"), QString());
+                return;
+            }
+
+            const QJsonDocument doc = QJsonDocument::fromJson(reply->readAll());
+            if (!doc.isObject()) {
+                safeCard->setLocationInfo(QStringLiteral("未知"), QString());
+                return;
+            }
+
+            const QJsonObject o = doc.object();
+            if (o.value(QStringLiteral("status")).toString() != QStringLiteral("success")) {
+                const QString msg = o.value(QStringLiteral("message")).toString();
+                if (!msg.isEmpty())
+                    safeCard->setLocationInfo(msg, QString());
+                else
+                    safeCard->setLocationInfo(QStringLiteral("未知"), QString());
+                return;
+            }
+
+            const QString cty = o.value(QStringLiteral("country")).toString();
+            const QString code = o.value(QStringLiteral("countryCode")).toString();
+            const QString q = o.value(QStringLiteral("query")).toString();
+            if (!cty.isEmpty()) {
+                countryLine = code.isEmpty() ? cty : QStringLiteral("%1 (%2)").arg(cty, code);
+            }
+            ipLine = q;
+            if (serverIndex >= 0 && serverIndex < static_cast<int>(m_serverProfiles.size())) {
+                m_serverProfiles[static_cast<size_t>(serverIndex)].setCountry(cty.toStdString());
+                m_serverProfiles[static_cast<size_t>(serverIndex)].setCountryCode(code.toStdString());
+            }
+            if (countryLine.isEmpty())
+                countryLine = QStringLiteral("未知");
+            safeCard->setLocationInfo(countryLine, ipLine);
+        });
+    });
+
+    QFuture<int> fut = QtConcurrent::run([host, port]() {
+        return tcpConnectLatencyMs(host, port);
+    });
+    watcher->setFuture(fut);
 }
 
 ProfileItem v2raycpp::getSelectedProfile() const
@@ -1679,6 +1944,7 @@ void v2raycpp::stopStatsTimer()
     {
         ui.statSpeedUp->setText("0 KB/s");
     }
+
 }
 
 void v2raycpp::updateStats()
@@ -1727,6 +1993,11 @@ void v2raycpp::updateStats()
     {
         ui.statSpeedUp->setText(uploadStr);
     }
+
+    if (ui.statUptime) {
+        ui.statUptime->setText(formatFooterUptime(m_startTime, m_currentStatus));
+    }
+
 }
 
 void v2raycpp::startReconnectTimer()
@@ -1758,16 +2029,6 @@ void v2raycpp::onReconnectTimeout()
 
 void v2raycpp::onSearchTextChanged(const QString& text)
 {
-    QString searchText = text.trimmed().toLower();
-    //TODO:Fixit
-    /*for (int i = 0; i < ui.serverList->count(); ++i)
-    {
-        QListWidgetItem* item = ui.serverList->item(i);
-        if (item)
-        {
-            QString itemText = item->text().toLower();
-            bool match = searchText.isEmpty() || itemText.contains(searchText);
-            item->setHidden(!match);
-        }
-    }*/
+    Q_UNUSED(text);
+    updateServerCardFilter();
 }

@@ -37,31 +37,41 @@ QWidget#ProxyClient QLabel#logoIcon {
     border-image: url(:/images/figma/logo.png);
 }
 
-QWidget#ProxyClient QLabel#searchIcon {
-    qproperty-icon: url(:/images/figma/icon_search.png);
-    qproperty-iconSize: 12px 12px;
+QWidget#ProxyClient QFrame#searchFieldWrap {
+    background-color: #141B2D;
+    border: 1px solid #1E2536;
+    border-radius: 14px;
+    min-height: 28px;
+    max-width: 220px;
+}
+
+QWidget#ProxyClient QFrame#searchFieldWrap QLineEdit#searchBar {
+    background: transparent;
+    border: none;
+    padding: 4px 2px 4px 0px;
+    color: #FFFFFF;
+    font-size: 12px;
+}
+
+QWidget#ProxyClient QFrame#searchFieldWrap QLineEdit#searchBar:focus {
+    outline: none;
+}
+
+QWidget#ProxyClient QLabel#statConnIcon,
+QWidget#ProxyClient QLabel#statSpeedDownIcon,
+QWidget#ProxyClient QLabel#statSpeedUpIcon,
+QWidget#ProxyClient QLabel#statIPIcon,
+QWidget#ProxyClient QLabel#statUptimeIcon {
+    min-width: 14px;
+    max-width: 14px;
+    min-height: 14px;
+    max-height: 14px;
 }
 
 QWidget#ProxyClient QLabel#statConnLabel {
-    qproperty-icon: url(:/images/figma/status_connect.png);
     color: #00D283;
     font-size: 11px;
     font-weight: 800;
-}
-
-QWidget#ProxyClient QLabel#statSpeedDown {
-    qproperty-icon: url(:/images/figma/status_download.png);
-    qproperty-iconSize: 12px 12px;
-}
-
-QWidget#ProxyClient QLabel#statSpeedUp {
-    qproperty-icon: url(:/images/figma/status_upload.png);
-    qproperty-iconSize: 12px 12px;
-}
-
-QWidget#ProxyClient QLabel#statIP {
-    qproperty-icon: url(:/images/figma/status_ip.png);
-    qproperty-iconSize: 12px 12px;
 }
 
 /* Sidebar logo */
@@ -86,33 +96,13 @@ QWidget#ProxyClient QLabel[class="logoSubtitle"] {
 /* Sidebar navigation */
 QWidget#ProxyClient QPushButton[class="navItem"] {
     text-align: left;
-    padding: 12px 20px;
+    padding: 12px 16px;
     border: none;
     border-radius: 8px;
     color: #7A86A1;
     font-size: 14px;
     font-weight: 600;
     background-color: transparent;
-}
-
-QWidget#ProxyClient QPushButton#navHome {
-    qproperty-icon: url(:/images/figma/nav_home.png);
-}
-
-QWidget#ProxyClient QPushButton#navServers {
-    qproperty-icon: url(:/images/figma/nav_servers.png);
-}
-
-QWidget#ProxyClient QPushButton#navStats {
-    qproperty-icon: url(:/images/figma/nav_stats.png);
-}
-
-QWidget#ProxyClient QPushButton#navSettings {
-    qproperty-icon: url(:/images/figma/nav_settings_1.png);
-}
-
-QWidget#ProxyClient QPushButton#navHelp {
-    qproperty-icon: url(:/images/figma/nav_help.png);
 }
 
 QWidget#ProxyClient QPushButton[class="navItem"]:hover {
@@ -224,19 +214,6 @@ QWidget#ProxyClient QPushButton[class="iconBtn"]:hover {
     color: #FFFFFF;
 }
 
-QWidget#ProxyClient QLineEdit#searchBar {
-    background-color: #141B2D;
-    border: 1px solid #1E2536;
-    border-radius: 19px;
-    padding: 8px 18px;
-    color: #FFFFFF;
-    font-size: 13px;
-}
-
-QWidget#ProxyClient QLineEdit#searchBar:focus {
-    border: 1px solid #1C60F9;
-}
-
 QWidget#ProxyClient QPushButton[class="circleBtn"] {
     background-color: #141B2D;
     border-radius: 18px;
@@ -268,24 +245,36 @@ QWidget#ProxyClient QLabel#pageSubtitle {
     font-size: 14px;
 }
 
-/* Filters */
-QWidget#ProxyClient QPushButton[class="filterBtn"] {
-    background-color: #1E2536;
-    color: #7A86A1;
-    border: none;
-    border-radius: 16px;
-    padding: 8px 20px;
-    font-size: 11px;
-    font-weight: 800;
+/* Protocol filter — segmented bar (Figma-style) */
+QWidget#ProxyClient QFrame#protocolFilterBar[class="protocolFilterBar"] {
+    background-color: #161C2C;
+    border: 1px solid #2A354D;
+    border-radius: 10px;
 }
 
-QWidget#ProxyClient QPushButton[class="filterBtn"]:hover {
-    background-color: #2A354D;
+QWidget#ProxyClient QFrame#protocolFilterBar QPushButton[class="filterSegment"] {
+    background-color: transparent;
+    color: #7A86A1;
+    border: none;
+    border-radius: 7px;
+    padding: 6px 14px;
+    min-height: 26px;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+QWidget#ProxyClient QFrame#protocolFilterBar QPushButton[class="filterSegment"]:hover:!checked {
+    color: #E8EEF8;
+    background-color: rgba(255, 255, 255, 0.04);
+}
+
+QWidget#ProxyClient QFrame#protocolFilterBar QPushButton[class="filterSegment"]:checked {
+    background-color: #1C60F9;
     color: #FFFFFF;
 }
 
-QWidget#ProxyClient QPushButton[class="filterBtn"]:checked {
-    background-color: #1C60F9;
+QWidget#ProxyClient QFrame#protocolFilterBar QPushButton[class="filterSegment"]:pressed {
+    background-color: #1554D8;
     color: #FFFFFF;
 }
 
@@ -302,20 +291,32 @@ SimpleCard[class="card"]:hover {
     border: 1px solid #3A4A6B;
 }
 
-SimpleCard[class="card"][active="true"] {
+/* Selected server card (click selection; dynamic property selected=true) */
+SimpleCard[class="card"][selected="true"] {
+    background-color: #171F38;
     border: 1px solid #1C60F9;
+}
+
+SimpleCard[class="card"][selected="true"]:hover {
+    background-color: #1A2440;
+    border: 1px solid #4A7CFF;
 }
 
 SimpleCard QLabel#simpleCardIcon[class="cardIcon"] {
     font-size: 32px;
     background-color: #FFFFFF;
     border-radius: 12px;
-    min-width: 44px;
-    min-height: 44px;
-    max-width: 44px;
-    max-height: 44px;
+    min-width: 36px;
+    min-height: 36px;
+    max-width: 36px;
+    max-height: 36px;
     qproperty-alignment: AlignCenter;
     margin-right: 15px;
+}
+
+SimpleCard QLabel#simpleCardIcon[class="cardIcon"][empty="true"] {
+    background-color: #1F293D;
+    border: 1px solid #2A354D;
 }
 
 SimpleCard QLabel#simpleCardTitle[class="cardTitle"] {
@@ -340,8 +341,9 @@ SimpleCard QLabel#simpleCardLatCaption[class="latLabel"] {
 
 SimpleCard QFrame#simpleCardDivider[class="cardLine"] {
     background-color: #1F293D;
+    min-height: 1px;
     max-height: 1px;
-    margin: 10px 0;
+    margin: 8px 0;
     border: none;
 }
 
@@ -356,22 +358,32 @@ SimpleCard QLabel#simpleCardTag2[class="tag"] {
     margin-right: 5px;
 }
 
-SimpleCard QCheckBox#simpleCardToggle[class="toggle"] {
-    spacing: 0px;
-}
-
-SimpleCard QCheckBox#simpleCardToggle[class="toggle"]::indicator {
-    width: 46px;
-    height: 24px;
-    border-radius: 12px;
-}
-
-SimpleCard QCheckBox#simpleCardToggle[class="toggle"]::indicator:unchecked {
+SimpleCard QLabel#simpleCardTag1[class="tagCountry"] {
     background-color: #1F293D;
+    color: #C5D0E6;
+    padding: 6px 14px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    margin-right: 5px;
 }
 
-SimpleCard QCheckBox#simpleCardToggle[class="toggle"]::indicator:checked {
-    background-color: #1C60F9;
+SimpleCard QLabel#simpleCardTag2[class="tagIp"] {
+    background-color: #1F293D;
+    color: #7A86A1;
+    padding: 6px 14px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 500;
+    margin-right: 5px;
+}
+
+/* ConnectSwitch: track/thumb drawn in ConnectSwitch.cpp — colors match #2A354D / #1C60F9 / #FFFFFF */
+SimpleCard ConnectSwitch#simpleCardConnectSwitch[class="cardSwitch"] {
+    margin: 0;
+    padding: 0;
+    border: none;
+    background: transparent;
 }
 
 /* Add node card */
@@ -398,10 +410,10 @@ QWidget#ProxyClient QLabel#addNodeText {
     color: #7A86A1;
 }
 
-/* Bottom stats row */
+/* Bottom stats row — icon+text 分两个 QLabel，间距由 layout 控制 */
 QWidget#ProxyClient QLabel[class="statText"] {
     color: #7A86A1;
     font-size: 11px;
     font-weight: 600;
-    margin-left: 20px;
+    margin-left: 0px;
 }

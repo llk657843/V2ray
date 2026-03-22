@@ -32,6 +32,14 @@ public:
      */
     static QString generateClientConfig(const ProfileItem& node, ERoutingMode mode);
 
+    /**
+     * @brief 生成配置并写入文件
+     * @param node 配置文件节点
+     * @param filePath 写入的文件路径
+     * @return bool 是否成功
+     */
+    static bool generateAndWriteConfig(const ProfileItem& node, const QString& filePath);
+
 private:
     /// <summary>
     /// 生成入站配置（SOCKS 10808 + HTTP 10809）

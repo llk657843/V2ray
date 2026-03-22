@@ -5,6 +5,7 @@
 #include "VerifyCodePage.h"
 
 #include <QDebug>
+#include <QMessageBox>
 
 LoginMainWidget::LoginMainWidget(QWidget *parent)
     : QWidget(parent)
@@ -21,7 +22,7 @@ LoginMainWidget::~LoginMainWidget()
 void LoginMainWidget::setupUi()
 {
     setObjectName("LoginMainWidget");
-    setWindowTitle("Kinetic Login");
+    setWindowTitle(QStringLiteral("XProxy"));
     setFixedSize(1200, 760);
     setWindowFlags(Qt::FramelessWindowHint | Qt::Window);
     setAttribute(Qt::WA_StyledBackground, true);
@@ -37,14 +38,15 @@ void LoginMainWidget::setupUi()
     headerLayout->setContentsMargins(0, 0, 0, 0);
     headerLayout->setSpacing(0);
 
-    QLabel *logoLabel = new QLabel("KINETIC", header);
+    QLabel *logoLabel = new QLabel(QStringLiteral("XProxy"), header);
     logoLabel->setObjectName("logoLabel");
 
-    QPushButton *closeButton = new QPushButton("x", header);
+    QPushButton *closeButton = new QPushButton(QStringLiteral("关闭"), header);
     closeButton->setObjectName("closeButton");
     closeButton->setCursor(Qt::PointingHandCursor);
     closeButton->setFocusPolicy(Qt::NoFocus);
-    closeButton->setFixedSize(32, 32);
+    closeButton->setFixedHeight(32);
+    closeButton->setMinimumWidth(56);
 
     headerLayout->addWidget(logoLabel);
     headerLayout->addStretch();
@@ -80,7 +82,7 @@ void LoginMainWidget::setupUi()
     m_stackedWidget->addWidget(verifyPage);
     m_pages["verify"] = verifyPage;
 
-    connect(verifyCodePage, &VerifyCodePage::verifyRequested, this, &LoginMainWidget::verifyCodeSubmitted);
+    connect(verifyCodePage, &VerifyCodePage::verifyRequested, this, &LoginMainWidget::onVerifyCodeSubmitted);
     connect(verifyCodePage, &VerifyCodePage::resendRequested, this, &LoginMainWidget::resendVerificationRequested);
 
     ResetPwd *resetPwdPage = new ResetPwd(contentArea);
@@ -93,7 +95,12 @@ void LoginMainWidget::setupUi()
     m_stackedWidget->addWidget(resetPage);
     m_pages["resetPwd"] = resetPage;
 
-    connect(resetPwdPage, &ResetPwd::sendResetLinkRequested, this, &LoginMainWidget::resetLinkRequested);
+    connect(resetPwdPage, &ResetPwd::sendResetLinkRequested, this,
+        [this, verifyCodePage](const QString &identifier) {
+            emit resetLinkRequested(identifier);
+            verifyCodePage->clearCode();
+            switchPage(QStringLiteral("verify"));
+        });
     connect(resetPwdPage, &ResetPwd::backToLoginRequested, this, [this]() {
         switchPage(QStringLiteral("login"));
     });
@@ -112,9 +119,7 @@ void LoginMainWidget::setupUi()
         switchPage(QStringLiteral("login"));
     });
     connect(registerPageWidget, &RegisterPage::accountInitializeRequested, this,
-        [](const QString &email, const QString &) {
-            qDebug() << "Initialize account requested for" << email;
-        });
+        &LoginMainWidget::onAccountInitializeRequested);
 
     QWidget *footer = new QWidget(this);
     footer->setObjectName("footer");
@@ -128,12 +133,12 @@ void LoginMainWidget::setupUi()
         footer);
     copyrightLabel->setObjectName("copyrightLabel");
 
-    QPushButton *privacyButton = new QPushButton("PRIVACY POLICY", footer);
+    QPushButton *privacyButton = new QPushButton(QStringLiteral("隐私政策"), footer);
     privacyButton->setObjectName("footerPrivacyButton");
     privacyButton->setCursor(Qt::PointingHandCursor);
     privacyButton->setFocusPolicy(Qt::NoFocus);
 
-    QPushButton *termsButton = new QPushButton("TERMS OF SERVICE", footer);
+    QPushButton *termsButton = new QPushButton(QStringLiteral("服务条款"), footer);
     termsButton->setObjectName("footerTermsButton");
     termsButton->setCursor(Qt::PointingHandCursor);
     termsButton->setFocusPolicy(Qt::NoFocus);
@@ -179,6 +184,20 @@ void LoginMainWidget::onCloseClicked()
 {
     emit loginClose();
     close();
+}
+
+void LoginMainWidget::onVerifyCodeSubmitted(const QString &code)
+{
+    emit verifyCodeSubmitted(code);
+    QMessageBox::information(this, tr("Verify Success"), tr("Verification succeeded."));
+    switchPage(QStringLiteral("login"));
+}
+
+void LoginMainWidget::onAccountInitializeRequested(const QString &email, const QString &password)
+{
+    emit accountInitializeRequested(email, password);
+    QMessageBox::information(this, tr("Account Created"), tr("Your account was created successfully."));
+    switchPage(QStringLiteral("login"));
 }
 
 void LoginMainWidget::mousePressEvent(QMouseEvent *event)

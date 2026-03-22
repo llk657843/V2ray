@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>ProxyClient</string>
+   <string>XProxy</string>
   </property>
   <layout class="QHBoxLayout" name="mainLayout">
    <property name="spacing">
@@ -88,7 +88,7 @@
           <item>
            <widget class="QLabel" name="logoTitle">
             <property name="text">
-             <string>ProxyClient</string>
+             <string>XProxy</string>
             </property>
             <property name="class" stdset="0">
              <string>logoTitle</string>
@@ -98,7 +98,7 @@
           <item>
            <widget class="QLabel" name="logoSubtitle">
             <property name="text">
-             <string>Professional v1.2.4</string>
+             <string>XProxy</string>
             </property>
             <property name="class" stdset="0">
              <string>logoSubtitle</string>
@@ -141,7 +141,7 @@
       <item>
        <widget class="QPushButton" name="navHome">
         <property name="text">
-         <string>Home</string>
+         <string>首页</string>
         </property>
         <property name="checkable">
          <bool>true</bool>
@@ -160,7 +160,7 @@
       <item>
        <widget class="QPushButton" name="navServers">
         <property name="text">
-         <string>Servers</string>
+         <string>服务器</string>
         </property>
         <property name="checkable">
          <bool>true</bool>
@@ -176,7 +176,7 @@
       <item>
        <widget class="QPushButton" name="navStats">
         <property name="text">
-         <string>Statistics</string>
+         <string>统计</string>
         </property>
         <property name="checkable">
          <bool>true</bool>
@@ -192,7 +192,7 @@
       <item>
        <widget class="QPushButton" name="navSettings">
         <property name="text">
-         <string>Settings</string>
+         <string>设置</string>
         </property>
         <property name="checkable">
          <bool>true</bool>
@@ -208,7 +208,7 @@
       <item>
        <widget class="QPushButton" name="navHelp">
         <property name="text">
-         <string>Help Center</string>
+         <string>帮助中心</string>
         </property>
         <property name="checkable">
          <bool>true</bool>
@@ -302,7 +302,7 @@
       <item>
        <widget class="QPushButton" name="btnDisconnect">
         <property name="text">
-         <string>Disconnect Account</string>
+         <string>断开账户</string>
         </property>
        </widget>
       </item>
@@ -363,7 +363,7 @@
             </size>
            </property>
            <property name="text">
-            <string>Start System Proxy</string>
+            <string>启动系统代理</string>
            </property>
           </widget>
          </item>
@@ -398,28 +398,72 @@
           </spacer>
          </item>
          <item>
-          <layout class="QHBoxLayout">
-           <property name="spacing">
-            <number>0</number>
+          <widget class="QFrame" name="searchFieldWrap">
+           <property name="frameShape">
+            <enum>QFrame::Shape::NoFrame</enum>
            </property>
-           <item>
-            <widget class="QLabel" name="searchIcon">
-             <property name="text">
-              <string/>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QLineEdit" name="searchBar">
-             <property name="text">
-              <string/>
-             </property>
-             <property name="placeholderText">
-              <string>Search nodes...</string>
-             </property>
-            </widget>
-           </item>
-          </layout>
+           <property name="minimumSize">
+            <size>
+             <width>140</width>
+             <height>28</height>
+            </size>
+           </property>
+           <property name="maximumSize">
+            <size>
+             <width>220</width>
+             <height>28</height>
+            </size>
+           </property>
+           <layout class="QHBoxLayout" name="layout_searchField">
+            <property name="spacing">
+             <number>6</number>
+            </property>
+            <property name="leftMargin">
+             <number>8</number>
+            </property>
+            <property name="topMargin">
+             <number>0</number>
+            </property>
+            <property name="rightMargin">
+             <number>8</number>
+            </property>
+            <property name="bottomMargin">
+             <number>0</number>
+            </property>
+            <item>
+             <widget class="QLabel" name="searchIcon">
+              <property name="text">
+               <string/>
+              </property>
+              <property name="minimumSize">
+               <size>
+                <width>12</width>
+                <height>12</height>
+               </size>
+              </property>
+              <property name="maximumSize">
+               <size>
+                <width>12</width>
+                <height>12</height>
+               </size>
+              </property>
+              <property name="scaledContents">
+               <bool>true</bool>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QLineEdit" name="searchBar">
+              <property name="text">
+               <string/>
+              </property>
+              <property name="placeholderText">
+               <string>搜索节点...</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </widget>
          </item>
          <item>
           <widget class="QPushButton" name="btnNotify">
@@ -496,78 +540,98 @@
             </spacer>
            </item>
            <item>
-            <layout class="QHBoxLayout">
-             <property name="spacing">
-              <number>10</number>
+            <widget class="QFrame" name="protocolFilterBar">
+             <property name="frameShape">
+              <enum>QFrame::Shape::NoFrame</enum>
              </property>
-             <item>
-              <widget class="QPushButton" name="filterAll">
-               <property name="text">
-                <string>ALL</string>
-               </property>
-               <property name="checkable">
-                <bool>true</bool>
-               </property>
-               <property name="checked">
-                <bool>true</bool>
-               </property>
-               <property name="autoExclusive">
-                <bool>true</bool>
-               </property>
-               <property name="class" stdset="0">
-                <string>filterBtn</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QPushButton" name="filterVmess">
-               <property name="text">
-                <string>VMESS</string>
-               </property>
-               <property name="checkable">
-                <bool>true</bool>
-               </property>
-               <property name="autoExclusive">
-                <bool>true</bool>
-               </property>
-               <property name="class" stdset="0">
-                <string>filterBtn</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QPushButton" name="filterTrojan">
-               <property name="text">
-                <string>TROJAN</string>
-               </property>
-               <property name="checkable">
-                <bool>true</bool>
-               </property>
-               <property name="autoExclusive">
-                <bool>true</bool>
-               </property>
-               <property name="class" stdset="0">
-                <string>filterBtn</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QPushButton" name="filterVless">
-               <property name="text">
-                <string>VLESS</string>
-               </property>
-               <property name="checkable">
-                <bool>true</bool>
-               </property>
-               <property name="autoExclusive">
-                <bool>true</bool>
-               </property>
-               <property name="class" stdset="0">
-                <string>filterBtn</string>
-               </property>
-              </widget>
-             </item>
-            </layout>
+             <property name="class" stdset="0">
+              <string>protocolFilterBar</string>
+             </property>
+             <layout class="QHBoxLayout" name="horizontalLayout_protocolFilter">
+              <property name="spacing">
+               <number>2</number>
+              </property>
+              <property name="leftMargin">
+               <number>4</number>
+              </property>
+              <property name="topMargin">
+               <number>4</number>
+              </property>
+              <property name="rightMargin">
+               <number>4</number>
+              </property>
+              <property name="bottomMargin">
+               <number>4</number>
+              </property>
+              <item>
+               <widget class="QPushButton" name="filterAll">
+                <property name="text">
+                 <string>全部</string>
+                </property>
+                <property name="checkable">
+                 <bool>true</bool>
+                </property>
+                <property name="checked">
+                 <bool>true</bool>
+                </property>
+                <property name="flat">
+                 <bool>true</bool>
+                </property>
+                <property name="class" stdset="0">
+                 <string>filterSegment</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QPushButton" name="filterVmess">
+                <property name="text">
+                 <string>VMESS</string>
+                </property>
+                <property name="checkable">
+                 <bool>true</bool>
+                </property>
+                <property name="flat">
+                 <bool>true</bool>
+                </property>
+                <property name="class" stdset="0">
+                 <string>filterSegment</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QPushButton" name="filterTrojan">
+                <property name="text">
+                 <string>TROJAN</string>
+                </property>
+                <property name="checkable">
+                 <bool>true</bool>
+                </property>
+                <property name="flat">
+                 <bool>true</bool>
+                </property>
+                <property name="class" stdset="0">
+                 <string>filterSegment</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QPushButton" name="filterVless">
+                <property name="text">
+                 <string>VLESS</string>
+                </property>
+                <property name="checkable">
+                 <bool>true</bool>
+                </property>
+                <property name="flat">
+                 <bool>true</bool>
+                </property>
+                <property name="class" stdset="0">
+                 <string>filterSegment</string>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </widget>
            </item>
           </layout>
          </item>
@@ -642,6 +706,9 @@
          </size>
         </property>
         <layout class="QHBoxLayout" name="layout_bottom">
+         <property name="spacing">
+          <number>16</number>
+         </property>
          <property name="leftMargin">
           <number>32</number>
          </property>
@@ -649,11 +716,40 @@
           <number>32</number>
          </property>
          <item>
-          <widget class="QLabel" name="statConnLabel">
-           <property name="text">
-            <string>CONNECTED: US - SAN FRANCISCO</string>
+          <layout class="QHBoxLayout" name="layout_statConn">
+           <property name="spacing">
+            <number>6</number>
            </property>
-          </widget>
+           <item>
+            <widget class="QLabel" name="statConnIcon">
+             <property name="text">
+              <string/>
+             </property>
+             <property name="minimumSize">
+              <size>
+               <width>14</width>
+               <height>14</height>
+              </size>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>14</width>
+               <height>14</height>
+              </size>
+             </property>
+             <property name="scaledContents">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLabel" name="statConnLabel">
+             <property name="text">
+              <string>CONNECTED: US - SAN FRANCISCO</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
          </item>
          <item>
           <spacer>
@@ -669,24 +765,82 @@
           </spacer>
          </item>
          <item>
-          <widget class="QLabel" name="statSpeedDown">
-           <property name="text">
-            <string>4.2 MB/s</string>
+          <layout class="QHBoxLayout" name="layout_statSpeedUp">
+           <property name="spacing">
+            <number>6</number>
            </property>
-           <property name="class" stdset="0">
-            <string>statText</string>
-           </property>
-          </widget>
+           <item>
+            <widget class="QLabel" name="statSpeedUpIcon">
+             <property name="text">
+              <string/>
+             </property>
+             <property name="minimumSize">
+              <size>
+               <width>14</width>
+               <height>14</height>
+              </size>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>14</width>
+               <height>14</height>
+              </size>
+             </property>
+             <property name="scaledContents">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLabel" name="statSpeedUp">
+             <property name="text">
+              <string>128 KB/s</string>
+             </property>
+             <property name="class" stdset="0">
+              <string>statText</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
          </item>
          <item>
-          <widget class="QLabel" name="statSpeedUp">
-           <property name="text">
-            <string>128 KB/s</string>
+          <layout class="QHBoxLayout" name="layout_statSpeedDown">
+           <property name="spacing">
+            <number>6</number>
            </property>
-           <property name="class" stdset="0">
-            <string>statText</string>
-           </property>
-          </widget>
+           <item>
+            <widget class="QLabel" name="statSpeedDownIcon">
+             <property name="text">
+              <string/>
+             </property>
+             <property name="minimumSize">
+              <size>
+               <width>14</width>
+               <height>14</height>
+              </size>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>14</width>
+               <height>14</height>
+              </size>
+             </property>
+             <property name="scaledContents">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLabel" name="statSpeedDown">
+             <property name="text">
+              <string>4.2 MB/s</string>
+             </property>
+             <property name="class" stdset="0">
+              <string>statText</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
          </item>
          <item>
           <spacer>
@@ -702,24 +856,82 @@
           </spacer>
          </item>
          <item>
-          <widget class="QLabel" name="statIP">
-           <property name="text">
-            <string>IP: 104.28.19.42</string>
+          <layout class="QHBoxLayout" name="layout_statIP">
+           <property name="spacing">
+            <number>6</number>
            </property>
-           <property name="class" stdset="0">
-            <string>statText</string>
-           </property>
-          </widget>
+           <item>
+            <widget class="QLabel" name="statIPIcon">
+             <property name="text">
+              <string/>
+             </property>
+             <property name="minimumSize">
+              <size>
+               <width>14</width>
+               <height>14</height>
+              </size>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>14</width>
+               <height>14</height>
+              </size>
+             </property>
+             <property name="scaledContents">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLabel" name="statIP">
+             <property name="text">
+              <string>IP: 104.28.19.42</string>
+             </property>
+             <property name="class" stdset="0">
+              <string>statText</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
          </item>
          <item>
-          <widget class="QLabel" name="statUptime">
-           <property name="text">
-            <string>UPTIME: 02:45:12</string>
+          <layout class="QHBoxLayout" name="layout_statUptime">
+           <property name="spacing">
+            <number>6</number>
            </property>
-           <property name="class" stdset="0">
-            <string>statText</string>
-           </property>
-          </widget>
+           <item>
+            <widget class="QLabel" name="statUptimeIcon">
+             <property name="text">
+              <string/>
+             </property>
+             <property name="minimumSize">
+              <size>
+               <width>14</width>
+               <height>14</height>
+              </size>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>14</width>
+               <height>14</height>
+              </size>
+             </property>
+             <property name="scaledContents">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLabel" name="statUptime">
+             <property name="text">
+              <string>UPTIME: 02:45:12</string>
+             </property>
+             <property name="class" stdset="0">
+              <string>statText</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
          </item>
         </layout>
        </widget>

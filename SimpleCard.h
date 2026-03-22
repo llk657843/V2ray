@@ -3,7 +3,7 @@
 
 #include <QFrame>
 #include <QLabel>
-#include <QCheckBox>
+#include "ConnectSwitch.h"
 #include <QHBoxLayout>
 #include <QVBoxLayout>
 #include <QFrame>
@@ -15,9 +15,15 @@ class SimpleCard : public QFrame
 public:
     explicit SimpleCard(QWidget* parent = nullptr);
 
-    // 设置节点信息：name 显示为 title，latency 为延迟（ms），protocol 显示为 status 标签，connected 控制开关状态
+    // ???????????name ???? title??latency ?????ms????protocol ???? status ?????connected ?????????
     void setNodeInfo(const QString& name, int latency, const QString& protocol, bool connected);
-    void setFlag(const QString& flagPath); // 简单支持 emoji 文本或 pixmap 路径
+    /// ?????????????latency < -1 ?????????????? ??????-1 ??????
+    void setLatencyValue(int latencyMs);
+    /// ????/????????????? IP?????? "???? (US)" ?? "203.0.113.1"??
+    void setLocationInfo(const QString& countryLine, const QString& ipLine);
+    void setFlag(const QString& flagPath); // ????? emoji ????? pixmap ????
+    void setSelected(bool selected);
+    bool isSelected() const;
 
 signals:
     void clicked();
@@ -27,7 +33,7 @@ protected:
     void mousePressEvent(QMouseEvent* event) override;
 
 private slots:
-    void onToggleChanged(bool checked);
+    void onConnectToggled(bool checked);
 
 private:
     QLabel* m_icon = nullptr;
@@ -35,7 +41,9 @@ private:
     QLabel* m_status = nullptr;
     QLabel* m_lat = nullptr;
     QLabel* m_latLabel = nullptr;
-    QCheckBox* m_toggle = nullptr;
+    QLabel* m_tagCountry = nullptr;
+    QLabel* m_tagIp = nullptr;
+    ConnectSwitch* m_connectSwitch = nullptr;
     QFrame* m_line = nullptr;
     QHBoxLayout* m_topLayout = nullptr;
     QVBoxLayout* m_mainLayout = nullptr;

@@ -7,6 +7,7 @@
 #include <QCoreApplication>
 #include <QStandardPaths>
 #include <QDir>
+#include <ProfileItem.h>
 
 /// <summary>
 /// 系统代理类型枚举（用于系统代理设置）
@@ -149,6 +150,15 @@ public:
     void setDefUserAgent(const std::string& ua) { m_coreBasic.defUserAgent = ua; }
     std::string getDefUserAgent() const { return m_coreBasic.defUserAgent; }
     
+    // ============ Server Profiles ============
+    void addServerProfile(const ProfileItem& profile) { m_serverProfiles.push_back(profile); }
+    void clearServerProfiles() { m_serverProfiles.clear(); }
+    const std::vector<ProfileItem>& getServerProfiles() const { return m_serverProfiles; }
+    std::vector<ProfileItem> getServerProfiles() { return m_serverProfiles; }
+    
+    void loadServerProfiles();
+    void saveServerProfiles();
+
     // ============ InboundItem 配置 ============
     
     void setLocalPort(int port) { m_inbound.localPort = port; }
@@ -197,72 +207,47 @@ public:
     
     void setCorePath(const QString& path) { m_corePath = path; }
     QString getCorePath() const { return m_corePath; }
-    
-    void setCoreConfigPath(const QString& path) { m_coreConfigPath = path; }
+
+    // ============ App-level Config Path ============
+    void load();
+    void save();
+
+    QString getConfigPath() const;
+    QString getDefaultConfigPath() const;
     QString getCoreConfigPath() const { return m_coreConfigPath; }
-    
+    void setCoreConfigPath(const QString& path) { m_coreConfigPath = path; }
+
     void setLogFilePath(const QString& path) { m_logFilePath = path; }
     QString getLogFilePath() const { return m_logFilePath; }
-    
+
     // 默认路径
     QString getDefaultCorePath() const;
-    QString getDefaultConfigPath() const;
-    
     // ============ 配置管理方法 ============
-    
-    /// <summary>
-    /// 获取配置目录路径
-    /// </summary>
-    /// <returns>配置目录路径</returns>
-    QString getConfigPath() const;
-    
+
+
     /// <summary>
     /// 获取配置文件路径
     /// </summary>
     /// <returns>配置文件完整路径</returns>
     QString getConfigFilePath() const;
-    
-    /// <summary>
-    /// 加载配置文件
-    /// </summary>
-    /// <returns>true if load successful</returns>
-    bool load();
-    
-    /// <summary>
-    /// 保存配置文件
-    /// </summary>
-    /// <returns>true if save successful</returns>
-    bool save();
-    
+
     /// <summary>
     /// 重置为默认配置
     /// </summary>
     void resetToDefault();
-    
+
     /// <summary>
     /// 获取完整配置对象引用
     /// </summary>
     CoreBasicItem& getCoreBasic() { return m_coreBasic; }
-    const CoreBasicItem& getCoreBasic() const { return m_coreBasic; }
-    
+
     InboundItem& getInbound() { return m_inbound; }
-    const InboundItem& getInbound() const { return m_inbound; }
-    
+
     RoutingItem& getRouting() { return m_routing; }
-    const RoutingItem& getRouting() const { return m_routing; }
-    
+
     GUIItem& getGUI() { return m_gui; }
-    const GUIItem& getGUI() const { return m_gui; }
-    
+
     SystemProxyItem& getSystemProxy() { return m_systemProxy; }
-    const SystemProxyItem& getSystemProxy() const { return m_systemProxy; }
-
-private:
-    AppConfig() = default;
-    ~AppConfig() = default;
-
-    AppConfig(const AppConfig&) = delete;
-    AppConfig& operator=(const AppConfig&) = delete;
 
     // 配置项
     CoreBasicItem m_coreBasic;      // 核心设置
@@ -270,9 +255,15 @@ private:
     RoutingItem m_routing;         // 路由设置
     GUIItem m_gui;                  // UI设置
     SystemProxyItem m_systemProxy;  // 系统代理设置
-    
+
     // Xray-core 路径配置 (兼容旧接口)
     QString m_corePath;
     QString m_coreConfigPath;
     QString m_logFilePath;
+private:
+    AppConfig();
+    ~AppConfig() = default;
+
+
+    std::vector<ProfileItem> m_serverProfiles;
 };

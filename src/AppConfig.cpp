@@ -136,22 +136,23 @@ void SystemProxyItem::fromJson(const QJsonObject& json)
 
 // ============ AppConfig 实现 ============
 
+AppConfig::AppConfig()
+{
+    m_corePath = getDefaultCorePath();
+    m_coreConfigPath = getDefaultConfigPath();
+}
+
 QString AppConfig::getConfigPath() const
 {
     QString appDataPath = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
-    return appDataPath + "/v2raycpp";
-}
-
-QString AppConfig::getConfigFilePath() const
-{
-    return getConfigPath() + "/config.json";
+    QDir dir(appDataPath);
+    if (!dir.exists()) dir.mkpath(".");
+    return appDataPath;
 }
 
 QString AppConfig::getDefaultCorePath() const
 {
-    // Get application directory
     QString appPath = QCoreApplication::applicationDirPath();
-    
 #ifdef Q_OS_WIN
     return appPath + "/xray.exe";
 #else
@@ -161,126 +162,129 @@ QString AppConfig::getDefaultCorePath() const
 
 QString AppConfig::getDefaultConfigPath() const
 {
-    // Get config directory in AppData
-    QString configPath = QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation);
-    
-    // Ensure directory exists
-    QDir dir(configPath);
-    if (!dir.exists())
-    {
-        dir.mkpath(configPath);
-    }
-    
-    return configPath + "/config.json";
+    return getConfigPath() + "/config.json";
 }
 
-bool AppConfig::load()
+void AppConfig::load()
 {
-    QString configFile = getConfigFilePath();
+    QString configFile = getDefaultConfigPath();
     QFile file(configFile);
     
-    if (!file.exists())
+    if (!file.open(QIODevice::ReadOnly))
     {
-        qDebug() << "Config file does not exist, using default config:" << configFile;
-        return false;
+        qDebug() << "No config.json found, using defaults";
+        return;
     }
     
-    if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
-    {
-        qWarning() << "Failed to open config file:" << configFile;
-        return false;
-    }
-    
-    QByteArray data = file.readAll();
+    QJsonDocument doc = QJsonDocument::fromJson(file.readAll());
     file.close();
     
-    QJsonParseError parseError;
-    QJsonDocument doc = QJsonDocument::fromJson(data, &parseError);
-    
-    if (parseError.error != QJsonParseError::NoError)
-    {
-        qWarning() << "Failed to parse config file:" << parseError.errorString();
-        return false;
-    }
-    
-    if (!doc.isObject())
-    {
-        qWarning() << "Config file is not a valid JSON object";
-        return false;
-    }
+    if (doc.isNull() || !doc.isObject()) return;
     
     QJsonObject json = doc.object();
+    m_coreBasic.fromJson(json["coreBasic"].toObject());
+    m_inbound.fromJson(json["inbound"].toObject());
+    m_routing.fromJson(json["routing"].toObject());
+    m_gui.fromJson(json["gui"].toObject());
+    m_systemProxy.fromJson(json["systemProxy"].toObject());
     
-    // 加载各个配置项
-    if (json.contains("coreBasic"))
-    {
-        m_coreBasic.fromJson(json["coreBasic"].toObject());
-    }
-    
-    if (json.contains("inbound"))
-    {
-        m_inbound.fromJson(json["inbound"].toObject());
-    }
-    
-    if (json.contains("routing"))
-    {
-        m_routing.fromJson(json["routing"].toObject());
-    }
-    
-    if (json.contains("gui"))
-    {
-        m_gui.fromJson(json["gui"].toObject());
-    }
-    
-    if (json.contains("systemProxy"))
-    {
-        m_systemProxy.fromJson(json["systemProxy"].toObject());
-    }
-    
-    qDebug() << "Config loaded from:" << configFile;
-    return true;
+    if (json.contains("corePath")) m_corePath = json["corePath"].toString();
+    if (json.contains("coreConfigPath")) m_coreConfigPath = json["coreConfigPath"].toString();
+
+    loadServerProfiles();
 }
 
-bool AppConfig::save()
+void AppConfig::save()
 {
-    QString configPath = getConfigPath();
+    QString configDir = getConfigPath();
+    QDir().mkpath(configDir);
     
-    // 确保配置目录存在
-    QDir dir(configPath);
-    if (!dir.exists())
-    {
-        if (!dir.mkpath("."))
-        {
-            qWarning() << "Failed to create config directory:" << configPath;
-            return false;
-        }
-    }
+    QFile file(getDefaultConfigPath());
+    if (!file.open(QIODevice::WriteOnly)) return;
     
-    QString configFile = getConfigFilePath();
-    QFile file(configFile);
-    
-    if (!file.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate))
-    {
-        qWarning() << "Failed to open config file for writing:" << configFile;
-        return false;
-    }
-    
-    // 构建 JSON 对象
     QJsonObject json;
     json["coreBasic"] = m_coreBasic.toJson();
     json["inbound"] = m_inbound.toJson();
     json["routing"] = m_routing.toJson();
     json["gui"] = m_gui.toJson();
     json["systemProxy"] = m_systemProxy.toJson();
+    json["corePath"] = m_corePath;
+    json["coreConfigPath"] = m_coreConfigPath;
     
-    QJsonDocument doc(json);
-    QByteArray data = doc.toJson(QJsonDocument::Indented);
+    file.write(QJsonDocument(json).toJson());
+    file.close();
+
+    saveServerProfiles();
+}
+
+void AppConfig::loadServerProfiles()
+{
+    QString serversFile = getConfigPath() + "/servers.json";
+    QFile file(serversFile);
+    if (!file.open(QIODevice::ReadOnly)) return;
     
-    file.write(data);
+    QJsonDocument doc = QJsonDocument::fromJson(file.readAll());
     file.close();
     
-    qDebug() << "Config saved to:" << configFile;
-    return true;
+    if (doc.isNull() || !doc.isObject()) return;
+    
+    m_serverProfiles.clear();
+    QJsonArray servers = doc.object()["servers"].toArray();
+    for (const auto& serverVal : servers)
+    {
+        QJsonObject obj = serverVal.toObject();
+        ProfileItem profile;
+        profile.setAddress(obj["address"].toString().toStdString());
+        profile.setPort(obj["port"].toInt());
+        profile.setRemark(obj["remark"].toString().toStdString());
+        profile.setPassword(obj["password"].toString().toStdString());
+        profile.setSni(obj["sni"].toString().toStdString());
+        profile.setNetwork(obj["network"].toString().toStdString());
+        profile.setSecurity(obj["security"].toString().toStdString());
+        profile.setFingerprint(obj["fingerprint"].toString().toStdString());
+        profile.setAllowInsecure(obj["allowInsecure"].toBool());
+        profile.setUserId(obj["userId"].toString().toStdString());
+        profile.setAlterId(obj["alterId"].toString().toStdString());
+        
+        QString type = obj["configType"].toString();
+        if (type == "VMess") profile.setConfigType(EConfigType::VMess);
+        else if (type == "VLESS") profile.setConfigType(EConfigType::VLESS);
+        else if (type == "Trojan") profile.setConfigType(EConfigType::Trojan);
+        else if (type == "Shadowsocks") profile.setConfigType(EConfigType::Shadowsocks);
+        
+        if (profile.isValid()) m_serverProfiles.push_back(profile);
+    }
+}
+
+void AppConfig::saveServerProfiles()
+{
+    QString serversFile = getConfigPath() + "/servers.json";
+    QFile file(serversFile);
+    if (!file.open(QIODevice::WriteOnly)) return;
+    
+    QJsonArray servers;
+    for (const auto& profile : m_serverProfiles)
+    {
+        QJsonObject obj;
+        obj["address"] = QString::fromStdString(profile.getAddress());
+        obj["port"] = profile.getPort();
+        obj["remark"] = QString::fromStdString(profile.getRemark());
+        obj["password"] = QString::fromStdString(profile.getPassword());
+        obj["sni"] = QString::fromStdString(profile.getSni());
+        obj["network"] = QString::fromStdString(profile.getNetwork());
+        obj["security"] = QString::fromStdString(profile.getSecurity());
+        obj["fingerprint"] = QString::fromStdString(profile.getFingerprint());
+        obj["allowInsecure"] = profile.getAllowInsecure();
+        obj["userId"] = QString::fromStdString(profile.getUserId());
+        obj["alterId"] = QString::fromStdString(profile.getAlterId());
+        obj["configType"] = QString::fromStdString(profile.getConfigTypeString());
+        servers.append(obj);
+    }
+    
+    QJsonObject root;
+    root["servers"] = servers;
+    file.write(QJsonDocument(root).toJson());
+    file.close();
 }
 
 void AppConfig::resetToDefault()

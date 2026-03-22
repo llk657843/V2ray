@@ -35,9 +35,12 @@ signals:
     void verifyCodeSubmitted(const QString &code);
     void resendVerificationRequested();
     void resetLinkRequested(const QString &identifier);
+    void accountInitializeRequested(const QString &email, const QString &password);
 
 private slots:
     void onCloseClicked();
+    void onVerifyCodeSubmitted(const QString &code);
+    void onAccountInitializeRequested(const QString &email, const QString &password);
 
 private:
     void setupUi();

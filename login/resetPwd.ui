@@ -232,7 +232,7 @@
          </size>
         </property>
         <property name="text">
-         <string>Send Reset Link  →</string>
+         <string>发送重置链接</string>
         </property>
         <property name="cursor">
          <cursorShape>PointingHandCursor</cursorShape>
@@ -293,7 +293,7 @@
    <item alignment="Qt::AlignmentFlag::AlignHCenter">
     <widget class="QPushButton" name="backToLoginButton">
      <property name="text">
-      <string>←  BACK TO LOGIN</string>
+      <string>← 返回登录</string>
      </property>
      <property name="flat">
       <bool>true</bool>

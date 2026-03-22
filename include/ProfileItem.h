@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include <string>
 
@@ -86,6 +86,12 @@ public:
     int getLatency() const { return latency; }
     void setLatency(int value) { latency = value; }
 
+    /// 由 IP 地理查询得到，仅内存展示用（不写回 Xray config.json）
+    std::string getCountry() const { return country; }
+    void setCountry(const std::string& value) { country = value; }
+    std::string getCountryCode() const { return countryCode; }
+    void setCountryCode(const std::string& value) { countryCode = value; }
+
     // 端口转发配置
     int getLocalPort() const { return localPort; }
     void setLocalPort(int value) { localPort = value; }
@@ -121,6 +127,8 @@ private:
 
     ProtocolExtra protocolExtra;
     int latency = -1;
+    std::string country;
+    std::string countryCode;
 
     // 端口转发配置
     int localPort = 0;

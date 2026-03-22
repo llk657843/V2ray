@@ -480,7 +480,7 @@
          </size>
         </property>
         <property name="text">
-         <string>Initialize Account  ⚡</string>
+         <string>初始化账户</string>
         </property>
         <property name="cursor">
          <cursorShape>PointingHandCursor</cursorShape>
@@ -525,7 +525,7 @@
    <item alignment="Qt::AlignmentFlag::AlignHCenter">
     <widget class="QPushButton" name="backToLoginBtn">
      <property name="text">
-      <string>←  BACK TO LOGIN</string>
+      <string>← 返回登录</string>
      </property>
      <property name="flat">
       <bool>true</bool>

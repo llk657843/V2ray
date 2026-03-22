@@ -94,6 +94,9 @@
     <ClCompile Include="src\XrayApiClient.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="ConnectSwitch.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="SimpleCard.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -114,6 +117,9 @@
     <ClInclude Include="include\AppConfig.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="include\FooterBarIcons.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="include\ConfigGenerator.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -127,6 +133,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="include\V2rayConfig.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ConnectSwitch.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="include\ServerGridWidget.h">

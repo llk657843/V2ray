@@ -42,19 +42,19 @@ void TrayIcon::init()
     
     // Set initial icon
     m_trayIcon->setIcon(createTrayIcon(m_currentStatus));
-    m_trayIcon->setToolTip("v2raycpp");
+    m_trayIcon->setToolTip(QStringLiteral("XProxy"));
     
     // Create context menu
     m_menu = new QMenu();
     
     // Create menu actions
-    m_startProxyAction = new QAction(tr("Start Proxy"), this);
-    m_stopProxyAction = new QAction(tr("Stop Proxy"), this);
-    m_enableSystemProxyAction = new QAction(tr("Enable System Proxy"), this);
-    m_disableSystemProxyAction = new QAction(tr("Disable System Proxy"), this);
-    m_showWindowAction = new QAction(tr("Show Window"), this);
-    m_settingsAction = new QAction(tr("Settings"), this);
-    m_exitAction = new QAction(tr("Exit"), this);
+    m_startProxyAction = new QAction(QStringLiteral("启动代理"), this);
+    m_stopProxyAction = new QAction(QStringLiteral("停止代理"), this);
+    m_enableSystemProxyAction = new QAction(QStringLiteral("启用系统代理"), this);
+    m_disableSystemProxyAction = new QAction(QStringLiteral("禁用系统代理"), this);
+    m_showWindowAction = new QAction(QStringLiteral("显示主窗口"), this);
+    m_settingsAction = new QAction(QStringLiteral("设置"), this);
+    m_exitAction = new QAction(QStringLiteral("退出"), this);
     
     // Add actions to menu
     m_menu->addAction(m_startProxyAction);

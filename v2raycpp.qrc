@@ -17,6 +17,12 @@
         <file>images/figma/status_upload.png</file>
         <file>images/figma/status_ip.png</file>
         <file>images/figma/logo.png</file>
+        <!-- 底栏语义别名：图案错位时只改 alias 右侧物理文件（勿改 C++ 路径） -->
+        <file alias="images/figma/icon_footer_conn.png">images/figma/btn_power.png</file>
+        <file alias="images/figma/icon_footer_up.png">images/figma/status_ip.png</file>
+        <file alias="images/figma/icon_footer_down.png">images/figma/status_connect.png</file>
+        <file alias="images/figma/icon_footer_globe.png">images/figma/status_download.png</file>
+        <file alias="images/figma/icon_footer_clock.png">images/figma/nav_stats.png</file>
     </qresource>
     <qresource prefix="/v2raycpp"/>
 </RCC>

@@ -5,6 +5,8 @@
 #include <QMenu>
 #include <QAction>
 #include <QTimer>
+#include <QPointer>
+#include <QVector>
 #include <memory>
 #include <vector>
 #include "ui_v2raycpp.h"
@@ -14,6 +16,10 @@
 #include "AppConfig.h"
 #include "ProfileItem.h"
 #include "TrayIcon.h"
+
+class QNetworkAccessManager;
+class QButtonGroup;
+class SimpleCard;
 
 class v2raycpp : public QWidget
 {
@@ -67,6 +73,12 @@ private:
     void updateStatusBar();
     void addCardToGrid(const QString& title, const QString& protocol = QString(), int latency = -1, bool connected = false, int serverIndex = -1);
     void testLatency(const QString& address, int port);
+    /// 后台 TCP 测延迟并请求 IP 地理信息，完成后写回卡片与 m_serverProfiles[serverIndex]
+    void startCardServerProbe(SimpleCard* card, int serverIndex);
+    /// 按协议筛选 + 搜索框关键字显示/隐藏卡片
+    void updateServerCardFilter();
+    void applyServerCardSelection(int serverIndex);
+    void syncServerCardSelectionWithCurrentProfile();
     // Traffic statistics
     qint64 m_bytesReceived = 0;
     qint64 m_bytesSent = 0;
@@ -93,6 +105,10 @@ private:
     CoreStatus m_currentStatus = CoreStatus::Stopped;
     std::unique_ptr<TrayIcon> m_trayIcon;
     QDateTime m_startTime;
+    QNetworkAccessManager* m_geoNetwork = nullptr;
+    /// 与 m_serverProfiles 下标一一对应，用于刷新延迟等
+    QVector<QPointer<SimpleCard>> m_serverCards;
+    QButtonGroup* m_protocolFilterGroup = nullptr;
 
     // For window dragging
     bool m_dragging;

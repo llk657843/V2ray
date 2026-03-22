@@ -270,7 +270,7 @@
          </size>
         </property>
         <property name="text">
-         <string>Verify &amp; Continue  →</string>
+         <string>验证并继续</string>
         </property>
        </widget>
       </item>
@@ -309,7 +309,7 @@
    <item alignment="Qt::AlignmentFlag::AlignHCenter">
     <widget class="QLabel" name="resendLabel">
      <property name="text">
-      <string>&lt;span style=&quot;color:#8f98aa;&quot;&gt;Didn't receive the code? &lt;/span&gt;&lt;a href=&quot;resend&quot; style=&quot;color:#6B9FFF;text-decoration:none;font-weight:600;&quot;&gt;Resend Code&lt;/a&gt;</string>
+      <string>&lt;span style=&quot;color:#8f98aa;&quot;&gt;没有收到验证码？&lt;/span&gt;&lt;a href=&quot;resend&quot; style=&quot;color:#6B9FFF;text-decoration:none;font-weight:600;&quot;&gt;重新发送&lt;/a&gt;</string>
      </property>
      <property name="alignment">
       <set>Qt::AlignmentFlag::AlignCenter</set>

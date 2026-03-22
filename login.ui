@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Kinetic Login</string>
+   <string>XProxy</string>
   </property>
   <layout class="QVBoxLayout" name="mainLayout">
    <property name="leftMargin">
@@ -31,7 +31,7 @@
      <item>
       <widget class="QLabel" name="logoLabel">
        <property name="text">
-        <string>KINETIC</string>
+        <string>XProxy</string>
        </property>
       </widget>
      </item>
@@ -45,7 +45,7 @@
      <item>
       <widget class="QPushButton" name="closeButton">
        <property name="text">
-        <string>x</string>
+        <string>关闭</string>
        </property>
       </widget>
      </item>
@@ -138,7 +138,7 @@
         <item>
          <widget class="QPushButton" name="forgotButton">
           <property name="text">
-           <string>FORGOT?</string>
+           <string>忘记密码？</string>
           </property>
          </widget>
         </item>
@@ -157,7 +157,7 @@
       <item>
        <widget class="QPushButton" name="submitButton">
         <property name="text">
-         <string>Initialize Connection   &gt;</string>
+         <string>登录</string>
         </property>
        </widget>
       </item>
@@ -200,14 +200,14 @@
      <item>
       <widget class="QPushButton" name="privacyButton">
        <property name="text">
-        <string>PRIVACY POLICY</string>
+        <string>隐私政策</string>
        </property>
       </widget>
      </item>
      <item>
       <widget class="QPushButton" name="termsButton">
        <property name="text">
-        <string>TERMS OF SERVICE</string>
+        <string>服务条款</string>
        </property>
       </widget>
      </item>

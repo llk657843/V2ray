@@ -82,7 +82,7 @@ void LoginWidget::setupUi()
     passwordHeaderLayout->addWidget(m_passwordFieldLabel);
     passwordHeaderLayout->addStretch();
 
-    m_forgotButton = new QPushButton("FORGOT?", m_loginCard);
+    m_forgotButton = new QPushButton(QStringLiteral("忘记密码？"), m_loginCard);
     m_forgotButton->setObjectName("forgotButton");
     m_forgotButton->setCursor(Qt::PointingHandCursor);
     m_forgotButton->setFocusPolicy(Qt::NoFocus);
@@ -116,7 +116,7 @@ void LoginWidget::setupUi()
     m_eyeButton->setFocusPolicy(Qt::NoFocus);
     passwordLayout->addWidget(m_eyeButton);
 
-    m_submitButton = new QPushButton("Initialize Connection   >", m_loginCard);
+    m_submitButton = new QPushButton(QStringLiteral("登录"), m_loginCard);
     m_submitButton->setObjectName("submitButton");
     m_submitButton->setFixedHeight(46);
     m_submitButton->setCursor(Qt::PointingHandCursor);
@@ -130,9 +130,9 @@ void LoginWidget::setupUi()
     QHBoxLayout *createAccountRow = new QHBoxLayout();
     createAccountRow->setContentsMargins(0, 0, 0, 0);
     createAccountRow->setSpacing(0);
-    m_createAccountHint = new QLabel(tr("New to the network? "), m_loginCard);
+    m_createAccountHint = new QLabel(QStringLiteral("还没有账号？ "), m_loginCard);
     m_createAccountHint->setObjectName("loginCreateAccountHint");
-    m_createAccountButton = new QPushButton(tr("Create Account"), m_loginCard);
+    m_createAccountButton = new QPushButton(QStringLiteral("注册账号"), m_loginCard);
     m_createAccountButton->setObjectName("loginCreateAccountLink");
     m_createAccountButton->setFlat(true);
     m_createAccountButton->setCursor(Qt::PointingHandCursor);

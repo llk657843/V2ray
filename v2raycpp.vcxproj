@@ -37,12 +37,12 @@
   </ImportGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'" Label="QtSettings">
     <QtInstall>6.10.2_msvc2022_64</QtInstall>
-    <QtModules>core;gui;widgets;network;svg</QtModules>
+    <QtModules>core;gui;widgets;network;svg;concurrent</QtModules>
     <QtBuildConfig>debug</QtBuildConfig>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'" Label="QtSettings">
     <QtInstall>6.10.2_msvc2022_64</QtInstall>
-    <QtModules>core;gui;widgets;network;svg</QtModules>
+    <QtModules>core;gui;widgets;network;svg;concurrent</QtModules>
     <QtBuildConfig>release</QtBuildConfig>
   </PropertyGroup>
   <Target Name="QtMsBuildNotFound" BeforeTargets="CustomBuild;ClCompile" Condition="!Exists('$(QtMsBuild)\qt.targets') or !Exists('$(QtMsBuild)\qt.props')">
@@ -69,12 +69,13 @@
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)include;$(ProjectDir)src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)include;$(ProjectDir)src;$(ProjectDir)deps\curl\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>wininet.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(ProjectDir)deps\curl\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>wininet.lib;libcurl.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'" Label="Configuration">
@@ -85,22 +86,27 @@
       <ConformanceMode>true</ConformanceMode>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <AdditionalIncludeDirectories>$(ProjectDir)include;$(ProjectDir)src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)include;$(ProjectDir)src;$(ProjectDir)deps\curl\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>false</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
-      <AdditionalDependencies>wininet.lib;winhttp.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(ProjectDir)deps\curl\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>wininet.lib;winhttp.lib;libcurl.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OptimizeReferences>true</OptimizeReferences>
     </Link>
   </ItemDefinitionGroup>
+  <PropertyGroup Label="PostBuildEvent">
+    <PostBuildEvent>copy /y "$(ProjectDir)deps\curl\bin\libcurl-x64.dll" "$(OutDir)"</PostBuildEvent>
+  </PropertyGroup>
   <ItemGroup>
     <QtMoc Include="login\LoginWidget.h" />
     <QtMoc Include="login\LoginMainWidget.h" />
     <QtMoc Include="login\VerifyCodePage.h" />
     <QtMoc Include="login\ResetPwd.h" />
     <QtMoc Include="login\RegisterPage.h" />
+    <ClInclude Include="ConnectSwitch.h" />
     <QtMoc Include="SimpleCard.h" />
     <QtMoc Include="ServerGridWidget.h" />
     <QtMoc Include="ServerCardWidget.h" />
@@ -123,6 +129,7 @@
     <ClCompile Include="ServerGridWidget.cpp" />
     <ClCompile Include="src\CoreManager.cpp" />
     <ClCompile Include="ServerCardWidget.cpp" />
+    <ClCompile Include="ConnectSwitch.cpp" />
     <ClCompile Include="SimpleCard.cpp" />
     <ClCompile Include="src\Logger.cpp" />
     <ClCompile Include="src\ProfileManager.cpp" />
@@ -136,7 +143,9 @@
     <ClCompile Include="src\ConfigGenerator.cpp" />
     <ClCompile Include="src\Routing.cpp" />
     <ClCompile Include="src\XrayApiClient.cpp" />
+    <ClCompile Include="src\CurlClient.cpp" />
     <QtMoc Include="include\CoreManager.h" />
+    <ClInclude Include="include\CurlClient.h" />
     <ClInclude Include="include\Inbounds.h" />
     <QtMoc Include="include\Logger.h" />
     <ClInclude Include="include\Outbounds.h" />
@@ -145,6 +154,7 @@
     <QtMoc Include="include\TrayIcon.h" />
     <ClInclude Include="include\TrojanFmt.h" />
     <ClInclude Include="include\AppConfig.h" />
+    <ClInclude Include="include\FooterBarIcons.h" />
     <ClInclude Include="include\ConfigGenerator.h" />
     <ClInclude Include="include\Routing.h" />
   </ItemGroup>
