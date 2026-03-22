@@ -30,6 +30,9 @@ public:
     v2raycpp(QWidget* parent = nullptr);
     ~v2raycpp();
 
+signals:
+    void accountLogoutRequested();
+
 protected:
     void mousePressEvent(QMouseEvent* event) override;
     void mouseMoveEvent(QMouseEvent* event) override;
@@ -40,6 +43,7 @@ private slots:
     //void onCloseClicked();
     void onStartClicked();
     void onStopClicked();
+    void onDisconnectAccountClicked();
     void onImportClicked();
     void onSettingsClicked();
     void onEditServerClicked();

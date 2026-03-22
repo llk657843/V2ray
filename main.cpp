@@ -59,6 +59,13 @@ int main(int argc, char *argv[])
         loginMainWidget.hide();
         if (!mainWindow) {
             mainWindow = std::make_unique<v2raycpp>();
+            QObject::connect(mainWindow.get(), &v2raycpp::accountLogoutRequested, [&]() {
+                mainWindow->hide();
+                loginMainWidget.switchPage(QStringLiteral("login"));
+                loginMainWidget.show();
+                loginMainWidget.raise();
+                loginMainWidget.activateWindow();
+            });
         }
         mainWindow->show();
         mainWindow->raise();

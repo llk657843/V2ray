@@ -379,8 +379,10 @@ void v2raycpp::initUI()
         ui.btnDisconnect->setIcon(loadIcon("btn_disconnect"));
         ui.btnDisconnect->setIconSize(QSize(20, 20));
     }
-    ui.logoIcon->setFixedSize(QSize(40, 40));
-        // Server grid is created in initServerGrid()\n    // Old serverList not used\n    \n    // Connect new UI buttons
+    if (ui.logoIcon) {
+        ui.logoIcon->setFixedSize(QSize(40, 40));
+        ui.logoIcon->setPixmap(QPixmap());
+    }
     if (ui.btnStartProxy)
     {
         connect(ui.btnStartProxy, &QPushButton::clicked, this, &v2raycpp::onStartClicked);
@@ -396,11 +398,14 @@ void v2raycpp::initUI()
         connect(ui.navSettings, &QPushButton::clicked, this, &v2raycpp::onSettingsClicked);
     }
 
-    // btnClose not in new UI
+    if (ui.btnWindowClose) {
+        ui.btnWindowClose->setToolTip(QStringLiteral("关闭窗口"));
+        connect(ui.btnWindowClose, &QPushButton::clicked, this, &QWidget::close);
+    }
 
     if (ui.btnDisconnect)
     {
-        connect(ui.btnDisconnect, &QPushButton::clicked, this, &v2raycpp::onStopClicked);
+        connect(ui.btnDisconnect, &QPushButton::clicked, this, &v2raycpp::onDisconnectAccountClicked);
     }
 
     // Connect search box
@@ -667,6 +672,22 @@ void v2raycpp::onStopClicked()
     {
         QMessageBox::warning(this, "Warning", "Failed to stop core");
     }
+}
+
+void v2raycpp::onDisconnectAccountClicked()
+{
+    if (m_coreManager && m_currentStatus != CoreStatus::Stopped) {
+        m_coreManager->stopCore();
+    }
+    stopStatsTimer();
+    stopReconnectTimer();
+    if (m_sysProxyHandler) {
+        m_sysProxyHandler->clearProxy();
+    }
+    m_startTime = QDateTime();
+    updateUIStatus();
+    updateStatusBar();
+    emit accountLogoutRequested();
 }
 
 void v2raycpp::onImportClicked()
