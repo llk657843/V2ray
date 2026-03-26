@@ -10,8 +10,11 @@
 #include <QMouseEvent>
 #include <QMap>
 #include <QStackedWidget>
+#include <QJsonObject>
 
 class LoginWidget;
+class AuthClient;
+class VerifyCodePage;
 
 class LoginMainWidget : public QWidget
 {
@@ -30,7 +33,7 @@ protected:
     void mouseReleaseEvent(QMouseEvent *event) override;
 
 signals:
-    void loginSuccess();
+    void loginSuccess(const QString &token, const QJsonObject &user);
     void loginClose();
     void verifyCodeSubmitted(const QString &code);
     void resendVerificationRequested();
@@ -39,14 +42,28 @@ signals:
 
 private slots:
     void onCloseClicked();
-    void onVerifyCodeSubmitted(const QString &code);
+    void onVerifyCodeSubmitted(const QString &code, const QString &newPassword);
     void onAccountInitializeRequested(const QString &email, const QString &password);
+    
+    // AuthClient 回调
+    void onLoginSuccess(const QString &token, const QString &expireAt, const QJsonObject &user);
+    void onLoginFailed(const QString &message);
+    void onRegisterSuccess(const QString &userId, const QString &createdAt);
+    void onRegisterFailed(const QString &message);
+    void onSendCodeSuccess();
+    void onSendCodeFailed(const QString &message);
+    void onResetPasswordSuccess();
+    void onResetPasswordFailed(const QString &message);
 
 private:
     void setupUi();
 
     // Content
     QStackedWidget *m_stackedWidget;
+    LoginWidget *m_loginWidget;
+    AuthClient *m_authClient;
+    VerifyCodePage *m_verifyCodePage;
+    QString m_resetEmail;  // 用于重置密码流程
 
     // Page management
     QMap<QString, QWidget *> m_pages;

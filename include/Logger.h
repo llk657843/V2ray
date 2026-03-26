@@ -13,10 +13,10 @@
 // Log level definitions
 enum LogLevel
 {
-    DEBUG = 0,
-    INFO = 1,
-    WARNING = 2,
-    ERROR = 3
+    LOG_DEBUG = 0,
+    LOG_INFO = 1,
+    LOG_WARNING = 2,
+	LOG_ERROR = 3
 };
 
 class Logger : public QObject

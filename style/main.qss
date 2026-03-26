@@ -33,10 +33,6 @@ QWidget#ProxyClient QFrame#fr_bottom {
 }
 
 /* Icons */
-QWidget#ProxyClient QLabel#logoIcon {
-    border-image: url(:/images/figma/logo.png);
-}
-
 QWidget#ProxyClient QFrame#searchFieldWrap {
     background-color: #141B2D;
     border: 1px solid #1E2536;
@@ -74,12 +70,12 @@ QWidget#ProxyClient QLabel#statConnLabel {
     font-weight: 800;
 }
 
-/* Sidebar logo */
-QWidget#ProxyClient QLabel[class="logoIcon"] {
-    font-size: 24px;
-    background-color: #1C60F9;
-    border-radius: 8px;
-    padding: 6px;
+/* Sidebar logo — resource PNG via QSS（勿在代码里 setPixmap，否则会盖住 border-image） */
+QWidget#ProxyClient QLabel#logoIcon[class="logoIcon"] {
+    border: none;
+    padding: 0;
+    background-color: transparent;
+    border-image: url(:/images/figma/logo.png) 0 0 0 0 stretch stretch;
 }
 
 QWidget#ProxyClient QLabel[class="logoTitle"] {
@@ -214,13 +210,23 @@ QWidget#ProxyClient QPushButton[class="iconBtn"]:hover {
     color: #FFFFFF;
 }
 
+QWidget#ProxyClient QPushButton#btnWindowClose[class="iconBtn"] {
+    color: #9CA3AF;
+    font-size: 20px;
+    font-weight: 300;
+}
+
+QWidget#ProxyClient QPushButton#btnWindowClose[class="iconBtn"]:hover {
+    background-color: rgba(248, 113, 113, 0.2);
+    color: #F87171;
+}
+
 QWidget#ProxyClient QPushButton[class="circleBtn"] {
     background-color: #141B2D;
     border-radius: 18px;
     width: 36px;
     height: 36px;
     border: none;
-    margin-left: 15px;
 }
 
 QWidget#ProxyClient QLabel#profilePic {
@@ -230,7 +236,6 @@ QWidget#ProxyClient QLabel#profilePic {
     min-height: 36px;
     max-width: 36px;
     max-height: 36px;
-    margin-left: 10px;
 }
 
 /* Page title */

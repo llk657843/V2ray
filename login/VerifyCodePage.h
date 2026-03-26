@@ -20,10 +20,12 @@ public:
     ~VerifyCodePage() override;
 
     QString code() const;
+    QString newPassword() const;
     void clearCode();
+    void clearPasswordFields();
 
 signals:
-    void verifyRequested(const QString &code);
+    void verifyRequested(const QString &code, const QString &newPassword);
     void resendRequested();
 
 private slots:

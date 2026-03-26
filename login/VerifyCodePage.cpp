@@ -4,6 +4,7 @@
 #include <QEvent>
 #include <QKeyEvent>
 #include <QLineEdit>
+#include <QMessageBox>
 #include <QRegularExpressionValidator>
 
 VerifyCodePage::VerifyCodePage(QWidget *parent)
@@ -49,12 +50,23 @@ QString VerifyCodePage::code() const
     return s;
 }
 
+QString VerifyCodePage::newPassword() const
+{
+    return ui->newPasswordInput->text();
+}
+
 void VerifyCodePage::clearCode()
 {
     for (int i = 0; i < 6; ++i) {
         m_digits[i]->clear();
     }
     m_digits[0]->setFocus();
+}
+
+void VerifyCodePage::clearPasswordFields()
+{
+    ui->newPasswordInput->clear();
+    ui->confirmPasswordInput->clear();
 }
 
 void VerifyCodePage::wireDigitInputs()
@@ -82,9 +94,25 @@ void VerifyCodePage::advanceIfDigit(int index, const QString &text)
 void VerifyCodePage::onVerifyClicked()
 {
     const QString c = code();
-    if (c.length() == 6) {
-        emit verifyRequested(c);
+    const QString password = ui->newPasswordInput->text();
+    const QString confirmPassword = ui->confirmPasswordInput->text();
+
+    if (c.length() != 6) {
+        QMessageBox::warning(this, tr("验证码错误"), tr("请输入 6 位验证码。"));
+        return;
     }
+
+    if (password.length() < 8) {
+        QMessageBox::warning(this, tr("密码不合规"), tr("新密码长度不能少于 8 位。"));
+        return;
+    }
+
+    if (password != confirmPassword) {
+        QMessageBox::warning(this, tr("密码不一致"), tr("两次输入的新密码不一致，请重新输入。"));
+        return;
+    }
+
+    emit verifyRequested(c, password);
 }
 
 void VerifyCodePage::onResendLinkActivated(const QString &link)

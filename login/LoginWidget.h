@@ -8,6 +8,7 @@
 #include <QHBoxLayout>
 #include <QVBoxLayout>
 #include <QFrame>
+#include <QCheckBox>
 #include <QMouseEvent>
 #include <QWheelEvent>
 
@@ -18,6 +19,7 @@ class LoginWidget : public QWidget
 public:
     explicit LoginWidget(QWidget *parent = nullptr);
     ~LoginWidget();
+    void onLoginResult(bool success);
 
 signals:
     void loginSuccess(const QString &username, const QString &password);
@@ -28,10 +30,18 @@ signals:
 private slots:
     void onSubmitClicked();
     void onEyeClicked();
+    void onRememberToggled(bool checked);
 
 private:
     void setupUi();
     void setupConnections();
+    void loadRememberedCredentials();
+    void stageCredentialsForLoginAttempt();
+    void persistStagedCredentialsIfNeeded();
+    QString credentialFilePath() const;
+    bool writeEncryptedCredentials(const QString &username, const QString &password);
+    bool readEncryptedCredentials(QString &username, QString &password);
+    void clearCredentialFile();
 
     // Login Card
     QWidget *m_loginCard;
@@ -54,12 +64,16 @@ private:
 
     // Actions
     QPushButton *m_forgotButton;
+    QCheckBox *m_rememberCheckBox;
     QPushButton *m_submitButton;
     QLabel *m_createAccountHint;
     QPushButton *m_createAccountButton;
 
     // State
     bool m_passwordVisible;
+    bool m_pendingRemember;
+    QString m_pendingUsername;
+    QString m_pendingPassword;
 };
 
 #endif // LOGINWIDGET_H

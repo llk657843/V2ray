@@ -10,11 +10,11 @@ QMutex Logger::s_mutex;
 // ============ Constructor ============
 Logger::Logger(QObject* parent)
     : QObject(parent)
-    , m_level(INFO)
+    , m_level(LOG_INFO)
     , m_fileLogEnabled(true)
     , m_consoleLogEnabled(true)
 {
-    // Set default log directory: %APPDATA%\v2raycpp\logs\
+    // Set default log directory: %APPDATA%\v2raycpp\logs
     m_logDir = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
     m_logDir += "/logs/";
     
@@ -53,10 +53,10 @@ QString Logger::levelToString(LogLevel level) const
 {
     switch (level)
     {
-        case DEBUG:   return "DEBUG";
-        case INFO:    return "INFO";
-        case WARNING: return "WARNING";
-        case ERROR:   return "ERROR";
+        case LOG_DEBUG:   return "DEBUG";
+        case LOG_INFO:    return "INFO";
+        case LOG_WARNING: return "WARNING";
+        case LOG_ERROR:   return "ERROR";
         default:      return "UNKNOWN";
     }
 }
@@ -119,7 +119,7 @@ void Logger::log(LogLevel level, const QString& message)
     // Console output
     if (m_consoleLogEnabled)
     {
-        if (level >= WARNING)
+        if (level >= LOG_WARNING)
         {
             qWarning() << formattedMessage;
         }
@@ -143,22 +143,22 @@ void Logger::log(LogLevel level, const QString& message)
 
 void Logger::debug(const QString& message)
 {
-    log(DEBUG, message);
+    log(LOG_DEBUG, message);
 }
 
 void Logger::info(const QString& message)
 {
-    log(INFO, message);
+    log(LOG_INFO, message);
 }
 
 void Logger::warning(const QString& message)
 {
-    log(WARNING, message);
+    log(LOG_WARNING, message);
 }
 
 void Logger::error(const QString& message)
 {
-    log(ERROR, message);
+    log(LOG_ERROR, message);
 }
 
 // ============ Configuration ============

@@ -55,7 +55,10 @@ int main(int argc, char *argv[])
     LoginMainWidget loginMainWidget;
     loginMainWidget.show();
 
-    QObject::connect(&loginMainWidget, &LoginMainWidget::loginSuccess, [&]() {
+    QObject::connect(&loginMainWidget, &LoginMainWidget::loginSuccess,
+                     [&](const QString &token, const QJsonObject &user) {
+        Q_UNUSED(token);
+        Q_UNUSED(user);
         loginMainWidget.hide();
         if (!mainWindow) {
             mainWindow = std::make_unique<v2raycpp>();
